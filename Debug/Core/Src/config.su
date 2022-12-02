@@ -1,0 +1,4 @@
+../Core/Src/config.c:49:6:backup_settings	16	static
+../Core/Src/config.c:58:6:restore_settings	16	static
+../Core/Src/config.c:70:6:reset_defaults	16	static
+../Core/Src/config.c:78:6:config_to_setpoints	16	static

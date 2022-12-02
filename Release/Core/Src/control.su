@@ -1,0 +1,10 @@
+../Core/Src/control.c:22:6:HAL_ADC_ConvCpltCallback	0	static
+../Core/Src/control.c:26:6:lights_and_buzzers	16	static
+../Core/Src/control.c:84:10:check_interlocks	0	static
+../Core/Src/control.c:301:7:get_shunt_current	8	static
+../Core/Src/control.c:307:7:motor_pi_update	24	static
+../Core/Src/control.c:318:6:motor_pwm_update	32	static
+../Core/Src/control.c:110:6:motor_state_machine	48	static
+../Core/Src/control.c:394:19:read_thermocouples	32	static
+../Core/Src/control.c:449:6:thermal_control_loop	32	static
+../Core/Src/control.c:49:6:HAL_TIM_PeriodElapsedCallback	16	static
