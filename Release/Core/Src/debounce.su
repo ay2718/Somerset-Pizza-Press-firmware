@@ -1,4 +1,0 @@
-../Core/Src/debounce.c:21:6:debounce	0	static
-../Core/Src/debounce.c:40:6:debounce_menu_buttons	8	static
-../Core/Src/debounce.c:46:6:debounce_activate_buttons	8	static
-../Core/Src/debounce.c:50:6:debounce_interlock	8	static
