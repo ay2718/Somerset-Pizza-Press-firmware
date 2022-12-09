@@ -13,7 +13,7 @@
 #include "structs.h"
 #include "SSD1306.h"
 
-#define MENU_TIMEOUT 15000ul // 15 seconds
+#define MENU_TIMEOUT 7000ul // 7 seconds
 
 void init_menus(void);
 void link_menus(MenuItem*, MenuItem*);
