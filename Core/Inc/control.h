@@ -33,6 +33,8 @@
 #define SLOW_PRESS_TIME 3000
 #define SLOW_PRESS_DUTY 0.35f
 
+#define PRESS_TIME_BURP 1000
+
 // current measurement
 #define R_SHUNT 0.002f
 #define ADC_VOLTAGE 3.3f

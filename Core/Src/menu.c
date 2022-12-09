@@ -409,11 +409,15 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 //	} else if (press.thermal_state.error) {
 //		set_row("BAD THERMO!", 0, 1);
 	} else if (!press.thermal_setpoint.enable) {
-		set_row("ASLEEP", 0, 1);
+		set_row("ECO MODE", 0, 1);
 	} else if (!(press.thermal_state.top_ready && press.thermal_state.bottom_ready)) {
 		set_row("PREHEAT...", 0, 1);
 	} else if (press.press_state.mode == PRESS_READY){
-		set_row("READY!", 0, 1);
+		if (press.press_state.overload_flag) {
+			set_row("OVERLOAD", 0, 1);
+		} else {
+			set_row("READY!", 0, 1);
+		}
 	} else {
 		set_row("PRESSING...", 0, 1);
 	}

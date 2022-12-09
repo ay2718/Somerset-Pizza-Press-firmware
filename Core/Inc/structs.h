@@ -46,6 +46,7 @@ typedef struct {
 typedef struct {
 	PressMode mode;
 	bool burping;
+	bool overload_flag;
 	int16_t burp_ctr;
 	uint16_t ticks_until_next;
 	float motor_setpoint;
