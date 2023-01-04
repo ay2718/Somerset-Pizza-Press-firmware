@@ -57,19 +57,29 @@ MenuItem mode_menu = {
 		.target=&(press.config.flags)
 };
 
-MenuItem press_time_menu = {
+MenuItem press_time1_menu = {
 		.type=MENU_NUM,
-		.name="Press Time",
+		.name="1st Press Time",
 		.lower=PRESS_TIME_LOWER_LIM,
 		.upper=PRESS_TIME_UPPER_LIM,
 		.step=500,
 		.display=&press_time_display,
-		.target=&(press.config.press_time)
+		.target=&(press.config.press_time1)
+};
+
+MenuItem press_time2_menu = {
+		.type=MENU_NUM,
+		.name="2nd Press Time",
+		.lower=PRESS_TIME_LOWER_LIM,
+		.upper=PRESS_TIME_UPPER_LIM,
+		.step=500,
+		.display=&press_time_display,
+		.target=&(press.config.press_time2)
 };
 
 MenuItem burps_menu = {
 		.type=MENU_NUM,
-		.name="Burps",
+		.name="Taps",
 		.lower=BURPS_LOWER_LIM,
 		.upper=BURPS_UPPER_LIM,
 		.step=1,
@@ -148,7 +158,8 @@ void init_menus(void) {
 	link_menus(&main_menu, &top_temp_menu);
 	link_menus(&main_menu, &bottom_temp_menu);
 	link_menus(&main_menu, &mode_menu);
-	link_menus(&main_menu, &press_time_menu);
+	link_menus(&main_menu, &press_time1_menu);
+	link_menus(&main_menu, &press_time2_menu);
 	link_menus(&main_menu, &burps_menu);
 	link_menus(&main_menu, &eco_mode_menu);
 	link_menus(&main_menu, &buzzer_menu);

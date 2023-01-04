@@ -17,23 +17,26 @@
 #define ECO_TIMEOUT 900000ul // 15 minutes = 900 seconds
 
 // duty cycle
-#define MAX_DUTY_CYCLE 0.99f
 #define MAX_SLEW_RATE 0.007f
 
-#define MAX_DUTY_JOG 0.2f
-#define MAX_CURRENT_JOG 5.0f
+#define DUTY_CYCLE_FAST 0.99f
+#define DUTY_CYCLE_SLOW 0.35f
+#define DUTY_CYCLE_JOG 0.2f
+
+
+#define PRESS_TIME_FASTDROP 1000
+#define PRESS_TIME_TAP_UP 1000
+#define PRESS_TIME_TAP_DOWN 2000
+
 
 // overcurrent protection
-#define MAX_CURRENT 14.0f
-#define MAX_CURRENT_NORMAL 10.0f
-#define MAX_CURRENT_SQR (MAX_CURRENT*MAX_CURRENT)
+#define MOTOR_CURRENT_MAX 14.0f
+#define MOTOR_CURRENT_HIGH 10.0f
+#define MOTOR_CURRENT_LOW 5.0f
+
+#define MAX_CURRENT_SQR (MOTOR_CURRENT_MAX*MOTOR_CURRENT_MAX)
 #define CURRENT_FILT 0.05f
 
-#define FAST_PRESS_TIME 1000
-#define SLOW_PRESS_TIME 3000
-#define SLOW_PRESS_DUTY 0.35f
-
-#define PRESS_TIME_BURP 1000
 
 // current measurement
 #define R_SHUNT 0.002f

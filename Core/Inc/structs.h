@@ -14,6 +14,13 @@ typedef enum {
 } PressMode;
 
 typedef enum {
+	PRESS_FASTDROP,
+	PRESS_PERIOD1,
+	PRESS_TAPS,
+	PRESS_PERIOD2
+} PressCycleMode;
+
+typedef enum {
 	MENU,
 	MENU_NUM,
 	MENU_FLAG,
@@ -37,18 +44,18 @@ typedef struct {
 
 typedef struct {
 	int16_t burps;
-	uint16_t press_time_ticks;
-	uint16_t burp_ticks;
+	int16_t press_ticks1;
+	int16_t press_ticks2;
 	bool auto_mode;
 	bool enable;
 } PressSetpoint;
 
 typedef struct {
 	PressMode mode;
-	bool burping;
+	PressCycleMode cycle;
 	bool overload_flag;
 	int16_t burp_ctr;
-	uint16_t ticks_until_next;
+	int16_t ticks_until_next;
 	float motor_setpoint;
 	float motor_slew_limited_setpoint;
 	float current_limit;
@@ -84,7 +91,8 @@ typedef	union {
 		uint16_t flags;
 		int16_t top_temp;
 		int16_t bottom_temp;
-		int16_t press_time;
+		int16_t press_time1;
+		int16_t press_time2;
 		int16_t burps;
 	};
 } Config;

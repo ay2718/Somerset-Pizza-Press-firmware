@@ -182,6 +182,7 @@ void Error_Handler(void);
 #define CS_THERMOCOUPLE_TOP2_GPIO_Port GPIOB
 #define CS_THERMOCOUPLE_TOP1_Pin GPIO_PIN_9
 #define CS_THERMOCOUPLE_TOP1_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

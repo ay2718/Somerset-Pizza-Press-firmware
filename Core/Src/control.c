@@ -110,7 +110,7 @@ uint32_t check_interlocks(Press* press) {
 void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 	if (!press->press_setpoint.enable) {
 		press->press_state.motor_setpoint = 0.0f;
-		press->press_state.current_limit = MAX_CURRENT;
+		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_slew_limited_setpoint = 0.0f;
 		motor_pwm_update(&htim1, press, shunt_current);
 		return;
@@ -156,119 +156,140 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 	}
 	max_current = max(max_current, shunt_current);
 	max_current = max(max_current, -shunt_current);
-	/*
-	 * TODO: Implement overcurrent protection
-	 */
 
 	switch (press->press_state.mode) {
+
 	case PRESS_READY:
 		max_current = 0.0f;
-		press->press_state.burping = 0;
-		press->press_state.current_limit = MAX_CURRENT_NORMAL;
+		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_setpoint = 0.0f;
 		config_to_setpoints(press);
-		if (top_lim) {  // if somehow we're not at the top at the ready state
-//			press->press_state.mode = PRESS_ERROR;
+		if (top_lim) {
+			// if somehow we're not at the top at the ready state
 			press->press_state.error_code |= ERR_OVERSHOOT;
 		}
-		if (press_active) { // both buttons pressed and tray closed
-			press->press_state.ticks_until_next = FAST_PRESS_TIME + SLOW_PRESS_TIME;
+		if (press_active) {
+			// both buttons pressed and tray closed
+			// setup everything
+			press->press_state.ticks_until_next = PRESS_TIME_FASTDROP;
 			press->press_state.burp_ctr = press->press_setpoint.burps;
+			press->press_state.cycle = PRESS_FASTDROP;
 			press->press_state.mode = PRESS_DOWN;
 		}
 		break;
+
 	case PRESS_ERROR:
-		press->press_state.current_limit = MAX_CURRENT;
-		press->press_state.motor_setpoint = -0.2f;
-		press->press_state.burping = 0;
+		press->press_state.current_limit = MOTOR_CURRENT_LOW;
+		press->press_state.motor_setpoint = -DUTY_CYCLE_JOG;
+		// top limit switch triggered
 		if (!top_lim) {
 			press->press_state.mode = PRESS_DONE;
-			press->press_state.motor_setpoint = 0.0f;
 		}
-//		press->press_state.motor_setpoint = 0.0f;
-//		if (!top_lim) {
-//			press->press_state.mode = PRESS_DONE;
-//		} else if (press_active) {
-//			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-//			press->press_state.motor_setpoint = -MAX_DUTY_CYCLE;
-//		}
 		break;
+
 	case PRESS_DOWN:
-		press->press_state.ticks_until_next--;
-		if (press->press_state.ticks_until_next > SLOW_PRESS_TIME) {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = MAX_DUTY_CYCLE;
-		} else if (press->press_state.ticks_until_next > 0) {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = SLOW_PRESS_DUTY;
-			press->press_state.burping = 1;
+		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
+		if (press->press_state.cycle == PRESS_FASTDROP) {
+			press->press_state.motor_setpoint = DUTY_CYCLE_FAST;
 		} else {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = 0.0f;
-			press->press_state.overload_flag = true;
-			if (press->press_state->burp_ctr > 0) {
-				press->press_state.ticks_until_next = PRESS_TIME_BURP;
-			} else {
-				press->press_state.ticks_until_next = press->press_setpoint.press_time_ticks;
-			}
-
-			press->press_state.mode = PRESS_DWELL;
+			press->press_state.motor_setpoint = DUTY_CYCLE_SLOW;
 		}
 
+		if (press->press_state.ticks_until_next-- <= 0) {
+			if (press->press_state.cycle == PRESS_FASTDROP) {
+				// exit fast drop mode
+				press->press_state.cycle = PRESS_PERIOD1;
+				press->press_state.ticks_until_next = press->press_setpoint.press_ticks1;
+			} else {
+				// go to dwell mode
+				press->press_state.mode = PRESS_DWELL;
+			}
+		}
+
+		// Press has bottomed out
 		if (!bottom_lim) {
-			press->press_state.motor_setpoint = 0.0f;
-			press->press_state.overload_flag = false;
-			if (press->press_state->burp_ctr > 0) {
-				press->press_state.ticks_until_next = PRESS_TIME_BURP;
-			} else {
-				press->press_state.ticks_until_next = press->press_setpoint.press_time_ticks;
-			}
 			press->press_state.mode = PRESS_DWELL;
+			if (press->press_state.cycle == PRESS_FASTDROP) {
+				press->press_state.ticks_until_next = press->press_setpoint.press_ticks1;
+				press->press_state.cycle = PRESS_PERIOD1;
+			}
 		}
+
+		// manual mode and buttons released
 		if (!press->press_setpoint.auto_mode && !press_active) {
 			press->press_state.mode = PRESS_UP;
 		}
-		if (press->press_setpoint.auto_mode && !press->press_state.burping && !press_active) {
+
+		// auto mode and not down, buttons released
+		if (press->press_setpoint.auto_mode
+				&& (press->press_state.cycle == PRESS_FASTDROP)
+				&& !press_active) {
 			press->press_state.motor_setpoint = 0.0f;
 			press->press_state.mode = PRESS_ERROR;
 		}
 		break;
+
 	case PRESS_DWELL:
-		press->press_state.current_limit = MAX_CURRENT_NORMAL;
-		press->press_state.motor_setpoint = 0.0f;
-		if (bottom_lim) {  // if the bottom sensor is not triggered
-//			press->press_state.mode = PRESS_ERROR;
+		press->press_state.current_limit = MOTOR_CURRENT_LOW;
+		press->press_state.motor_setpoint = DUTY_CYCLE_SLOW;
+
+		// if the bottom sensor is not triggered
+		if (bottom_lim) {
 			press->press_state.error_code |= ERR_OVERSHOOT;
 		}
-		if (!press->press_setpoint.auto_mode) {
-			if (!press_active) {
+
+		// Manual mode and press buttons released
+		if (!press->press_setpoint.auto_mode && !press_active) {
+			press->press_state.mode = PRESS_UP;
+		}
+
+		// Auto mode and ticks expired
+		if (press->press_setpoint.auto_mode &&
+				(press->press_state.ticks_until_next-- <= 0))
+		{
+			switch (press->press_state.cycle) {
+
+			case PRESS_FASTDROP:
+			case PRESS_PERIOD1:
+				press->press_state.cycle = PRESS_TAPS;
+				break;
+
+			case PRESS_TAPS:
+				if (press->press_state.burp_ctr > 0) {
+					press->press_state.mode = PRESS_UP;
+					press->press_state.ticks_until_next = PRESS_TIME_TAP_UP;
+				} else {
+					press->press_state.cycle = PRESS_PERIOD2;
+					press->press_state.ticks_until_next = press->press_setpoint.press_ticks2;
+				}
+				break;
+
+			case PRESS_PERIOD2:
+			default:
 				press->press_state.mode = PRESS_UP;
-			}
-		} else {
-			if (press->press_state.ticks_until_next-- <= 0) {
-				press->press_state.ticks_until_next = press->press_setpoint.burp_ticks;
-				press->press_state.mode = PRESS_UP;
-				press->press_state.burping = 1;
+				break;
 			}
 		}
 		break;
+
 	case PRESS_UP:
 		if (press->press_setpoint.auto_mode && (press->press_state.burp_ctr > 0)) {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = -SLOW_PRESS_DUTY;
+			press->press_state.current_limit = MOTOR_CURRENT_LOW;
+			press->press_state.motor_setpoint = -DUTY_CYCLE_SLOW;
 		} else {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = -MAX_DUTY_CYCLE;
+			press->press_state.current_limit = MOTOR_CURRENT_LOW;
+			press->press_state.motor_setpoint = -DUTY_CYCLE_FAST;
 		}
-		if (!press->press_setpoint.auto_mode) {
-			if (press_active) {
-				press->press_state.mode = PRESS_DOWN;
-			}
-		} else if ((press->press_state.burp_ctr > 0) && (press->press_state.ticks_until_next-- <= 0)){
+
+		if (press->press_setpoint.auto_mode
+				&& (press->press_state.burp_ctr > 0)
+				&& (press->press_state.ticks_until_next-- <= 0)){
 			press->press_state.burp_ctr--;
 			press->press_state.mode = PRESS_DOWN;
-			press->press_state.ticks_until_next = SLOW_PRESS_TIME;
+			press->press_state.ticks_until_next = PRESS_TIME_TAP_DOWN;
 		}
+
+		// top limit reached!
 		if (!top_lim) {
 			press->press_state.mode = PRESS_DONE;
 			press_count++;
@@ -277,33 +298,34 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 			}
 		}
 		break;
+
 	case PRESS_DONE:
-		press->press_state.current_limit = MAX_CURRENT_NORMAL;
+		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_setpoint = 0.0f;
-		press->press_state.burping = 0;
-		if (left_button && right_button) {  // both buttons released
+
+		// both buttons released
+		if (left_button && right_button) {
 			press->press_state.mode = PRESS_READY;
 		}
 		break;
+
 	case PRESS_JOG:
-		press->press_state.current_limit = MAX_CURRENT_JOG;
+		press->press_state.current_limit = MOTOR_CURRENT_LOW;
 		press->press_state.motor_setpoint = 0.0f;
-		press->press_state.burping = 0;
 
 		if (top_lim && menu_up_button.state && !menu_down_button.state) {
-			press->press_state.motor_setpoint = -MAX_DUTY_JOG;
+			press->press_state.motor_setpoint = -DUTY_CYCLE_JOG;
 		}
 
 		if (bottom_lim && menu_down_button.state && !menu_up_button.state) {
-			press->press_state.motor_setpoint = MAX_DUTY_JOG;
+			press->press_state.motor_setpoint = DUTY_CYCLE_JOG;
 		}
 		break;
+
 	default:
-		press->press_state.current_limit = MAX_CURRENT;
+		press->press_state.current_limit = MOTOR_CURRENT_LOW;
 		press->press_state.motor_setpoint = 0.0f;
-//		press->press_state.mode = PRESS_ERROR;
 		press->press_state.error_code |= ERR_OVERSHOOT;
-		press->press_state.burping = 0;
 	}
 
 	motor_pwm_update(&htim1, press, shunt_current);
@@ -334,8 +356,8 @@ void motor_pwm_update(TIM_HandleTypeDef *htim, Press* press, float current) {
 
 	press->press_state.motor_setpoint =
 			clip(press->press_state.motor_setpoint,
-					MAX_DUTY_CYCLE,
-					-MAX_DUTY_CYCLE);
+					DUTY_CYCLE_FAST,
+					-DUTY_CYCLE_FAST);
 	float step;
 	const float deadband = 0.5f;
 	float itarget;
@@ -386,8 +408,8 @@ void motor_pwm_update(TIM_HandleTypeDef *htim, Press* press, float current) {
 
 	press->press_state.motor_slew_limited_setpoint =
 			clip(press->press_state.motor_slew_limited_setpoint + step,
-					MAX_DUTY_CYCLE,
-					-MAX_DUTY_CYCLE);
+					DUTY_CYCLE_FAST,
+					-DUTY_CYCLE_FAST);
 
 
 	int16_t pwm_cmd = (int16_t) (press->press_state.motor_slew_limited_setpoint * duty_to_cmd);

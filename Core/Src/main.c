@@ -79,8 +79,8 @@ uint16_t adc_output;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_ADC_Init(void);
 static void MX_DMA_Init(void);
+static void MX_ADC_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_SPI1_Init(void);
