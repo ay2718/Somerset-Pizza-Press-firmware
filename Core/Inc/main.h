@@ -92,6 +92,9 @@ extern Button tray_interlock;
 #define __C_TO_F(c) (32+(((c)*9)/5))
 #define __ROUND5(x) ((((x)+2)/5)*5)
 
+#define __F_TO_C_FLOAT(f) (((f)-32.0f)/1.8f)
+#define __C_TO_F_FLOAT(c) (32.0f+((c)*1.8f))
+
 #define __READ_UP_SW() (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_15))
 #define __READ_DOWN_SW() (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
 #define __READ_ENTER_SW() (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_14))

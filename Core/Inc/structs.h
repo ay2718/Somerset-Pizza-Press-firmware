@@ -75,6 +75,8 @@ typedef struct {
 			float top1, bottom1, top2, bottom2;
 		};
 	};
+	float top_temp;
+	float bottom_temp;
 	float top_threshold;
 	float bottom_threshold;
 	bool top_ready;

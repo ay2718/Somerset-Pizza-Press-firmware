@@ -410,6 +410,7 @@ HAL_StatusTypeDef debug_display(MenuItem* item) {
 }
 
 extern bool cycle_state;
+uint8_t eco_flash_ticks = 0;
 HAL_StatusTypeDef status_display(MenuItem* item) {
 	if (press.press_state.mode == PRESS_ERROR) { // TODO interlock error
 		if (tray_interlock.state) {
@@ -448,7 +449,7 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 
 	if (press.thermal_setpoint.top_temp > 0){
 		char str[32] = {0};
-		sprintf(str, "  %d %c", press.config.top_temp, unit);
+		sprintf(str, "(%d) %d %c", press.config.top_temp, lroundf(getTopTempDisplay(&press)), unit);
 		set_row(str, 3, 1);
 	} else {
 		set_row("  OFF", 3, 1);
@@ -456,7 +457,7 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 
 	if (press.thermal_setpoint.bottom_temp > 0){
 		char str[32] = {0};
-		sprintf(str, "  %d %c", press.config.bottom_temp, unit);
+		sprintf(str, "(%d) %d %c", press.config.bottom_temp, lroundf(getBottomTempDisplay(&press)), unit);
 		set_row(str, 5, 1);
 	} else {
 		set_row("  OFF", 5, 1);
@@ -466,6 +467,12 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 		char str[32] = {0};
 		sprintf(str, "Count: %d", press_count);
 		set_row(str, 7, 0);
+	}
+	if (!press.thermal_setpoint.enable) {
+		if (((--eco_flash_ticks) & 0xf) < 8) {
+			SSD1306_clearDisplay();
+			return HAL_OK;
+		}
 	}
 	return write_row(0);
 }

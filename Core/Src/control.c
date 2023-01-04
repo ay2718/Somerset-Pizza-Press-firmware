@@ -480,15 +480,14 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 }
 
 void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
-	float top_temp, bottom_temp;
 	if (!(press->thermal_state.error_code & ERR_BAD_TOP_THERMO1)) {
-		top_temp = press->thermal_state.top1;
+		press->thermal_state.top_temp = press->thermal_state.top1;
 		press->thermal_state.error &= ~1;
 	} else if (!(press->thermal_state.error_code & ERR_BAD_TOP_THERMO2)) {
-		top_temp = press->thermal_state.top2;
+		press->thermal_state.top_temp = press->thermal_state.top2;
 		press->thermal_state.error &= ~1;
 	} else {
-		top_temp = 1000.0f; // set unreasonably high to guarantee controller turns off
+		press->thermal_state.top_temp = 1000.0f; // set unreasonably high to guarantee controller turns off
 //		press->thermal_setpoint.enable = false;
 		press->thermal_state.error |= 1;
 		__WRITE_TOP_PLATTER_HEAT(0);
@@ -497,13 +496,13 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 	}
 
 	if (!(press->thermal_state.error_code & ERR_BAD_BOTTOM_THERMO1)) {
-		bottom_temp = press->thermal_state.bottom1;
+		press->thermal_state.bottom_temp = press->thermal_state.bottom1;
 		press->thermal_state.error &= ~2;
 	} else if (!(press->thermal_state.error_code & ERR_BAD_BOTTOM_THERMO2)) {
-		bottom_temp = press->thermal_state.bottom2;
+		press->thermal_state.bottom_temp = press->thermal_state.bottom2;
 		press->thermal_state.error &= ~2;
 	} else {
-		bottom_temp = 1000.0f; // set unreasonably high
+		press->thermal_state.bottom_temp = 1000.0f; // set unreasonably high
 //		press->thermal_setpoint.enable = false;
 		press->thermal_state.error |= 2;
 //		__WRITE_TOP_PLATTER_HEAT(0);
@@ -519,15 +518,15 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 		return;
 	}
 
-	if (press->thermal_setpoint.top_temp - top_temp > 3.0f) {
+	if (press->thermal_setpoint.top_temp - press->thermal_state.top_temp > 3.0f) {
 		press->thermal_state.top_ready = false;
 	}
-	if (press->thermal_setpoint.bottom_temp - bottom_temp > 3.0f) {
+	if (press->thermal_setpoint.bottom_temp - press->thermal_state.bottom_temp > 3.0f) {
 		press->thermal_state.bottom_ready = false;
 	}
 
-	bool top_heat_on = top_temp < press->thermal_state.top_threshold;
-	bool bottom_heat_on = bottom_temp < press->thermal_state.bottom_threshold;
+	bool top_heat_on = press->thermal_state.top_temp < press->thermal_state.top_threshold;
+	bool bottom_heat_on = press->thermal_state.bottom_temp < press->thermal_state.bottom_threshold;
 
 	__WRITE_TOP_PLATTER_HEAT(top_heat_on);
 	__WRITE_BOTTOM_PLATTER_HEAT(bottom_heat_on);
@@ -548,6 +547,23 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 		press->thermal_state.bottom_threshold =
 				press->thermal_setpoint.bottom_temp - THERM_DEADBAND;
 		press->thermal_state.bottom_ready = true;
+	}
+}
+
+
+float getTopTempDisplay(Press* press) {
+	if (press->config.flags & CONFIG_UNITS_FLAG) {
+		return press->thermal_state.top_temp;
+	} else {
+		return __C_TO_F_FLOAT(press->thermal_state.top_temp);
+	}
+}
+
+float getBottomTempDisplay(Press* press) {
+	if (press->config.flags & CONFIG_UNITS_FLAG) {
+		return press->thermal_state.bottom_temp;
+	} else {
+		return __C_TO_F_FLOAT(press->thermal_state.bottom_temp);
 	}
 }
 

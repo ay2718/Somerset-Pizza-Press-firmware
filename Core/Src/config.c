@@ -10,8 +10,8 @@
 Press press = {
 		.press_setpoint = {
 				.burps = 1,
-				.press_ticks1 = 1000,
-				.press_ticks2 = 1000,
+				.press_ticks1 = DEFAULT_PRESS_TIME,
+				.press_ticks2 = DEFAULT_PRESS_TIME,
 				.auto_mode = false,
 				.enable = false
 		},
@@ -33,6 +33,8 @@ Press press = {
 				.top2 = 100,
 				.bottom1 = 100,
 				.bottom2 = 100,
+				.top_temp = 100.0f,
+				.bottom_temp = 100.0f,
 				.error = 0,
 				.error_code = 0
 		},
