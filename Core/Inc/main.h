@@ -40,7 +40,7 @@ extern "C" {
 
 #include "structs.h"
 
-#define CYCLE_MODE
+//#define CYCLE_MODE
 
 /* USER CODE END Includes */
 

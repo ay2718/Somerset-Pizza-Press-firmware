@@ -29,12 +29,12 @@ Press press = {
 		},
 
 		.thermal_state = {
-				.top1 = 100,
-				.top2 = 100,
-				.bottom1 = 100,
-				.bottom2 = 100,
-				.top_temp = 100.0f,
-				.bottom_temp = 100.0f,
+				.top1 = 999,
+				.top2 = 999,
+				.bottom1 = 999,
+				.bottom2 = 999,
+				.top_temp = 999.0f,
+				.bottom_temp = 999.0f,
 				.error = 0,
 				.error_code = 0
 		},

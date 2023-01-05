@@ -434,11 +434,13 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 		set_row("PRESSING...", 0, 1);
 	}
 
+#ifdef CYCLE_MODE
 	{
 		char str[32] = {0};
 		sprintf(str, "Cycle mode: %d %d", cycle_mode, cycle_state);
 		set_row(str, 2, 0);
 	}
+#endif
 
 	char unit;
 	if (press.config.flags & CONFIG_UNITS_FLAG) {
@@ -449,18 +451,22 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 
 	if (press.thermal_setpoint.top_temp > 0){
 		char str[32] = {0};
-		sprintf(str, "(%d) %d %c", press.config.top_temp, lroundf(getTopTempDisplay(&press)), unit);
+		sprintf(str, "%3d: %3d %c", press.config.top_temp, getTopTempDisplay(&press), unit);
 		set_row(str, 3, 1);
 	} else {
-		set_row("  OFF", 3, 1);
+		char str[32] = {0};
+		sprintf(str, "OFF: %3d %c", getTopTempDisplay(&press), unit);
+		set_row(str, 3, 1);
 	}
 
 	if (press.thermal_setpoint.bottom_temp > 0){
 		char str[32] = {0};
-		sprintf(str, "(%d) %d %c", press.config.bottom_temp, lroundf(getBottomTempDisplay(&press)), unit);
+		sprintf(str, "%3d: %3d %c", press.config.bottom_temp, getBottomTempDisplay(&press), unit);
 		set_row(str, 5, 1);
 	} else {
-		set_row("  OFF", 5, 1);
+		char str[32] = {0};
+		sprintf(str, "OFF: %3d %c", getBottomTempDisplay(&press), unit);
+		set_row(str, 5, 1);
 	}
 
 	{

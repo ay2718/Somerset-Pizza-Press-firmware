@@ -461,7 +461,7 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 			}
 			// decode (big-endian) temperature
 			int16_t temp_raw = (thermo_buf[0] << 8) + thermo_buf[1];
-			float measured_temp = temp_raw * 0.0625f;
+			float measured_temp = ((float) temp_raw) * 0.0625f;
 
 			// Low pass filtering
 			press->thermal_state.temp_buf[active_thermocouple] =
@@ -551,20 +551,24 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 }
 
 
-float getTopTempDisplay(Press* press) {
+int getTopTempDisplay(Press* press) {
+	float temp;
 	if (press->config.flags & CONFIG_UNITS_FLAG) {
-		return press->thermal_state.top_temp;
+		temp = press->thermal_state.top_temp;
 	} else {
-		return __C_TO_F_FLOAT(press->thermal_state.top_temp);
+		temp = __C_TO_F_FLOAT(press->thermal_state.top_temp);
 	}
+	return lroundf(clip(temp, 999.0f, 0.0f));
 }
 
-float getBottomTempDisplay(Press* press) {
+int getBottomTempDisplay(Press* press) {
+	float temp;
 	if (press->config.flags & CONFIG_UNITS_FLAG) {
-		return press->thermal_state.bottom_temp;
+		temp = press->thermal_state.bottom_temp;
 	} else {
-		return __C_TO_F_FLOAT(press->thermal_state.bottom_temp);
+		temp = __C_TO_F_FLOAT(press->thermal_state.bottom_temp);
 	}
+	return lroundf(clip(temp, 999.0f, 0.0f));
 }
 
 

@@ -78,7 +78,7 @@ void motor_pwm_update(TIM_HandleTypeDef*, Press*, float);
 HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef*, Press*);
 void thermal_control_loop(SPI_HandleTypeDef*, Press*);
 
-float getTopTempDisplay(Press*);
-float getBottomTempDisplay(Press*);
+int getTopTempDisplay(Press*);
+int getBottomTempDisplay(Press*);
 
 #endif /* INC_CONTROL_H_ */
