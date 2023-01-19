@@ -206,7 +206,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 			press->press_state.current_limit = MAX_CURRENT_NORMAL;
 			press->press_state.motor_setpoint = 0.0f;
 			press->press_state.overload_flag = true;
-			if (press->press_state->burp_ctr > 0) {
+			if (press->press_state.burp_ctr > 0) {
 				press->press_state.ticks_until_next = PRESS_TIME_BURP;
 			} else {
 				press->press_state.ticks_until_next = press->press_setpoint.press_time_ticks;
@@ -218,7 +218,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		if (!bottom_lim) {
 			press->press_state.motor_setpoint = 0.0f;
 			press->press_state.overload_flag = false;
-			if (press->press_state->burp_ctr > 0) {
+			if (press->press_state.burp_ctr > 0) {
 				press->press_state.ticks_until_next = PRESS_TIME_BURP;
 			} else {
 				press->press_state.ticks_until_next = press->press_setpoint.press_time_ticks;
