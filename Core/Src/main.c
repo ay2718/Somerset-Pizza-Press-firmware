@@ -144,12 +144,12 @@ int main(void)
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_2);
 
   HAL_TIM_Base_Start_IT(&htim1);
+  HAL_ADCEx_Calibration_Start(&hadc);
+
   HAL_ADC_Start_DMA(&hadc, (uint32_t*) &adc_output, 1);
 
   // pc_uart_init(&huart1);
 
-  HAL_Delay(2000);
-  HAL_ADCEx_Calibration_Start(&hadc);
   HAL_Delay(1000);
   press.press_setpoint.enable = true;
   press.thermal_setpoint.enable = true;

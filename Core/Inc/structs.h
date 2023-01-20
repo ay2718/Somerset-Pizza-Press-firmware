@@ -37,6 +37,7 @@ typedef enum {
 
 typedef struct {
 	int ctr;
+	int repeat_ctr;
 	bool state;
 	bool rising_edge_flag;
 	bool falling_edge_flag;
@@ -63,8 +64,8 @@ typedef struct {
 } PressState;
 
 typedef struct {
-	int16_t top_temp;
-	int16_t bottom_temp;
+	float top_temp;
+	float bottom_temp;
 	bool enable;
 } ThermalSetpoint;
 

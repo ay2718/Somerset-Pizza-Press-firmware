@@ -12,6 +12,8 @@
 #include "structs.h"
 
 #define SETTLING_TIME 10
+#define REPEAT_TIME 500
+#define REPEAT_INTERVAL 50
 
 bool debounce(Button*, bool);
 void debounce_menu_buttons(void);

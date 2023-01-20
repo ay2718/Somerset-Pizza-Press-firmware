@@ -51,7 +51,7 @@ MenuItem press_reset_count = {
 
 MenuItem mode_menu = {
 		.type=MENU_FLAG, // not implemented
-		.name="Mode",
+		.name="Auto Mode",
 		.display=&manual_mode_display,
 		.flag=CONFIG_MODE_FLAG,
 		.target=&(press.config.flags)
@@ -421,7 +421,15 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 //	} else if (press.thermal_state.error) {
 //		set_row("BAD THERMO!", 0, 1);
 	} else if (!press.thermal_setpoint.enable) {
-		set_row("ECO MODE", 0, 1);
+		if (((--eco_flash_ticks) & 0xf) < 8) {
+			set_row("", 0, 1);
+			set_row("", 2, 1);
+			set_row("", 4, 1);
+			set_row("", 6, 1);
+			return write_row(0);
+		} else {
+			set_row("ECO MODE", 0, 1);
+		}
 	} else if (!(press.thermal_state.top_ready && press.thermal_state.bottom_ready)) {
 		set_row("PREHEAT...", 0, 1);
 	} else if (press.press_state.mode == PRESS_READY){
@@ -449,7 +457,7 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 		unit = 'F';
 	}
 
-	if (press.thermal_setpoint.top_temp > 0){
+	if (press.thermal_setpoint.top_temp > 0.0f){
 		char str[32] = {0};
 		sprintf(str, "%3d: %3d %c", press.config.top_temp, getTopTempDisplay(&press), unit);
 		set_row(str, 3, 1);
@@ -473,12 +481,6 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 		char str[32] = {0};
 		sprintf(str, "Count: %d", press_count);
 		set_row(str, 7, 0);
-	}
-	if (!press.thermal_setpoint.enable) {
-		if (((--eco_flash_ticks) & 0xf) < 8) {
-			SSD1306_clearDisplay();
-			return HAL_OK;
-		}
 	}
 	return write_row(0);
 }

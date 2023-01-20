@@ -90,7 +90,7 @@ uint32_t check_interlocks(Press* press) {
 		if (press_top_limit.state) {  // if press is not at top
 			err |= ERR_INTERLOCK;
 		}
-		if (press->press_state.mode != PRESS_READY) {
+		if (press->press_state.mode != PRESS_READY && press->press_state.mode != PRESS_DONE) {
 			err |= ERR_INTERLOCK;
 		}
 	}
@@ -184,6 +184,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		// top limit switch triggered
 		if (!top_lim) {
 			press->press_state.mode = PRESS_DONE;
+//			press->press_state.motor_setpoint = 0.0f;
 		}
 		break;
 
@@ -302,6 +303,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 	case PRESS_DONE:
 		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_setpoint = 0.0f;
+
 
 		// both buttons released
 		if (left_button && right_button) {
@@ -450,6 +452,7 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 
 		// Detect if any fault bits are set
 		bool fault_state = (thermo_buf[1] & 0b1u) || (thermo_buf[3] & 0b111u);
+//		bool fault_state = thermo_buf[3] & 0b101u;
 		if (fault_state) {
 			press->thermal_state.error_code |= (ERR_BAD_TOP_THERMO1 << active_thermocouple);
 			press->thermal_state.bad_read_countdown[active_thermocouple] = 1000;
@@ -459,15 +462,15 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 			} else {
 				press->thermal_state.bad_read_countdown[active_thermocouple]--;
 			}
-			// decode (big-endian) temperature
-			int16_t temp_raw = (thermo_buf[0] << 8) + thermo_buf[1];
-			float measured_temp = ((float) temp_raw) * 0.0625f;
-
-			// Low pass filtering
-			press->thermal_state.temp_buf[active_thermocouple] =
-					(1.0f - THERM_FILTER_COEFF) * press->thermal_state.temp_buf[active_thermocouple] +
-					THERM_FILTER_COEFF * measured_temp;
 		}
+		// decode (big-endian) temperature
+		int16_t temp_raw = (thermo_buf[0] << 8) + thermo_buf[1];
+		float measured_temp = ((float) temp_raw) * 0.0625f;
+
+		// Low pass filtering
+		press->thermal_state.temp_buf[active_thermocouple] =
+				(1.0f - THERM_FILTER_COEFF) * press->thermal_state.temp_buf[active_thermocouple] +
+				THERM_FILTER_COEFF * measured_temp;
 
 		// Read next thermocouple
 		active_thermocouple++;

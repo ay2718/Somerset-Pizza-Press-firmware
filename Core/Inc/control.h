@@ -20,12 +20,12 @@
 #define MAX_SLEW_RATE 0.007f
 
 #define DUTY_CYCLE_FAST 0.99f
-#define DUTY_CYCLE_SLOW 0.35f
-#define DUTY_CYCLE_JOG 0.2f
+#define DUTY_CYCLE_SLOW 0.5f
+#define DUTY_CYCLE_JOG 0.3f
 
 
 #define PRESS_TIME_FASTDROP 1000
-#define PRESS_TIME_TAP_UP 1000
+#define PRESS_TIME_TAP_UP 700
 #define PRESS_TIME_TAP_DOWN 2000
 
 
@@ -46,7 +46,7 @@
 
 // thermal control
 #define THERM_FILTER_COEFF 0.01f	// update rate of 250 Hz --> 400 ms time constant
-#define THERM_DEADBAND 1.5f
+#define THERM_DEADBAND 0.5f
 
 // error code flags
 #define PRESS_OK 0u
