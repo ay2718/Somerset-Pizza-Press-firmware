@@ -445,7 +445,11 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 #ifdef CYCLE_MODE
 	{
 		char str[32] = {0};
-		sprintf(str, "Cycle mode: %d %d", cycle_mode, cycle_state);
+		if (cycle_mode) {
+			sprintf(str, "Cycle Mode On");
+		} else {
+			sprintf(str, "Cycle Mode Off");
+		}
 		set_row(str, 2, 0);
 	}
 #endif

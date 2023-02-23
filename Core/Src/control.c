@@ -274,6 +274,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		break;
 
 	case PRESS_UP:
+		// Default speed setting
 		if (press->press_setpoint.auto_mode && (press->press_state.burp_ctr > 0)) {
 			press->press_state.current_limit = MOTOR_CURRENT_LOW;
 			press->press_state.motor_setpoint = -DUTY_CYCLE_SLOW;
@@ -282,12 +283,20 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 			press->press_state.motor_setpoint = -DUTY_CYCLE_FAST;
 		}
 
+		// Tap timer expired
 		if (press->press_setpoint.auto_mode
 				&& (press->press_state.burp_ctr > 0)
 				&& (press->press_state.ticks_until_next-- <= 0)){
 			press->press_state.burp_ctr--;
 			press->press_state.mode = PRESS_DOWN;
 			press->press_state.ticks_until_next = PRESS_TIME_TAP_DOWN;
+		}
+
+		// Manual mode and buttons pressed
+		if (!press->press_setpoint.auto_mode && press_active) {
+			press->press_state.cycle = PRESS_PERIOD1;
+			press->press_state.mode = PRESS_DOWN;
+			press->press_state.ticks_until_next = press->press_setpoint.press_ticks1;
 		}
 
 		// top limit reached!
