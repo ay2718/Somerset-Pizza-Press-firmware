@@ -123,20 +123,14 @@ typedef struct __MenuItem{
 	// 2: yes/no entry
 	MenuType type;
 
-	union {
-		uint16_t length;  	// menu length
-		int16_t upper;		// numerical upper bound
-	};
+	uint16_t length;  	// menu length
+	int16_t upper;		// numerical upper bound
 
-	union {
-		uint16_t index;		// menu index
-		int16_t lower;		// numerical lower bound
-	};
+	uint16_t index;		// menu index
+	int16_t lower;		// numerical lower bound
 
-	union {
-		int16_t step;	// numerical entry step
-		int16_t flag;	// yes/no entry flag mask
-	};
+	int16_t step;	// numerical entry step
+	int16_t flag;	// yes/no entry flag mask
 
 	// if applicable, target modified by menu action
 	int16_t value;

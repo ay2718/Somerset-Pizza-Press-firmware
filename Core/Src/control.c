@@ -201,7 +201,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 				// exit fast drop mode
 				press->press_state.cycle = PRESS_PERIOD1;
 				press->press_state.ticks_until_next = press->press_setpoint.press_ticks1;
-			} else {
+			} else if (press->press_setpoint.auto_mode){
 				// go to dwell mode
 				press->press_state.mode = PRESS_DWELL;
 			}
@@ -232,7 +232,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 
 	case PRESS_DWELL:
 		press->press_state.current_limit = MOTOR_CURRENT_LOW;
-		press->press_state.motor_setpoint = DUTY_CYCLE_SLOW;
+		press->press_state.motor_setpoint = 0.0f;
 
 		// if the bottom sensor is not triggered
 		if (bottom_lim) {

@@ -17,7 +17,7 @@
 #define ECO_TIMEOUT 900000ul // 15 minutes = 900 seconds
 
 // duty cycle
-#define MAX_SLEW_RATE 0.007f
+#define MAX_SLEW_RATE 0.01f
 
 #define DUTY_CYCLE_FAST 0.99f
 #define DUTY_CYCLE_SLOW 0.5f
@@ -31,8 +31,8 @@
 
 // overcurrent protection
 #define MOTOR_CURRENT_MAX 14.0f
-#define MOTOR_CURRENT_HIGH 10.0f
-#define MOTOR_CURRENT_LOW 5.0f
+#define MOTOR_CURRENT_HIGH 8.0f
+#define MOTOR_CURRENT_LOW 4.0f
 
 #define MAX_CURRENT_SQR (MOTOR_CURRENT_MAX*MOTOR_CURRENT_MAX)
 #define CURRENT_FILT 0.05f
