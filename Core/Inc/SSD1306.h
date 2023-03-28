@@ -114,7 +114,7 @@
 #define TIMEOUT_INIT 400
 
 
-void SSD1306_InitScreen(I2C_HandleTypeDef*) ;
+void SSD1306_InitScreen(SPI_HandleTypeDef*) ;
 void SSD1306_writeString(uint8_t col, const char* text) ;
 void SSD1306_writeInt( uint8_t col, int32_t num);
 HAL_StatusTypeDef SSD1306_WriteRow( uint8_t page );
@@ -126,15 +126,21 @@ void SSD1306_setFont( uint8_t font );
 void SSD1306_clearDisplay();
 void SSD1306_ResetI2C();
 
-HAL_StatusTypeDef SSD1306_i2cWrite( uint8_t *buf, uint16_t num_bytes);
-HAL_StatusTypeDef SSD1306_DMAi2cWrite( uint8_t *buf, uint16_t num_bytes);
+HAL_StatusTypeDef SSD1306_spiWrite( uint8_t *buf, uint16_t num_bytes);
+HAL_StatusTypeDef SSD1306_spiWriteDMA( uint8_t *buf, uint16_t num_bytes);
+
+
+//HAL_StatusTypeDef SSD1306_i2cWrite( uint8_t *buf, uint16_t num_bytes);
+//HAL_StatusTypeDef SSD1306_DMAi2cWrite( uint8_t *buf, uint16_t num_bytes);
 
 HAL_StatusTypeDef SSD1306_writeFrameBufRow( uint8_t page );
 void SSD1306_writeCharToBuf( uint8_t col, char chr );
 
 HAL_StatusTypeDef SSD1306_command1(uint8_t c);
 HAL_StatusTypeDef SSD1306_sendCommand(uint8_t command, uint8_t param1, uint8_t param2);
-HAL_StatusTypeDef SSD1306_sendData(uint8_t data);
+HAL_StatusTypeDef SSD1306_sendDataByte(uint8_t data);
+HAL_StatusTypeDef SSD1306_sendData(uint8_t* data, uint16_t len);
+
 
 HAL_StatusTypeDef SSD1306_setPageAddress(uint8_t start, uint8_t end);
 HAL_StatusTypeDef SSD1306_setColumnAddress(uint8_t start, uint8_t end);
@@ -142,7 +148,8 @@ HAL_StatusTypeDef SSD1306_setColumnAddress(uint8_t start, uint8_t end);
 void SSD1306_SetupFrameBuf();
 
 
-extern I2C_HandleTypeDef *ssd1306_i2c;
+//extern I2C_HandleTypeDef *ssd1306_i2c;
+extern SPI_HandleTypeDef *ssd1306_spi;
 //extern uint8_t framebuf[COLUMNS+FRAME_BUF_OFFSET];   // add control commands. Only a single row is buffered at a time.
 //extern int timeout_cnt;
 //extern uint8_t _char_width;

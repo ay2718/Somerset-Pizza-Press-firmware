@@ -165,7 +165,7 @@ int main(void)
   restore_settings(&(press.config));
   config_to_setpoints(&press);
 
-  SSD1306_InitScreen(&hi2c2);
+  SSD1306_InitScreen(&hspi2);
   current_menu->display(current_menu);
   // Set button key press flags to low
   menu_up_button.rising_edge_flag = 0;

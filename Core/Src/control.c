@@ -90,7 +90,7 @@ uint32_t check_interlocks(Press* press) {
 		if (press_top_limit.state) {  // if press is not at top
 			err |= ERR_INTERLOCK;
 		}
-		if (press->press_state.mode != PRESS_READY) {
+		if (press->press_state.mode != PRESS_READY && press->press_state.mode != PRESS_DONE) {
 			err |= ERR_INTERLOCK;
 		}
 	}
@@ -110,7 +110,7 @@ uint32_t check_interlocks(Press* press) {
 void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 	if (!press->press_setpoint.enable) {
 		press->press_state.motor_setpoint = 0.0f;
-		press->press_state.current_limit = MAX_CURRENT;
+		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_slew_limited_setpoint = 0.0f;
 		motor_pwm_update(&htim1, press, shunt_current);
 		return;
@@ -156,119 +156,150 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 	}
 	max_current = max(max_current, shunt_current);
 	max_current = max(max_current, -shunt_current);
-	/*
-	 * TODO: Implement overcurrent protection
-	 */
 
 	switch (press->press_state.mode) {
+
 	case PRESS_READY:
 		max_current = 0.0f;
-		press->press_state.burping = 0;
-		press->press_state.current_limit = MAX_CURRENT_NORMAL;
+		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_setpoint = 0.0f;
 		config_to_setpoints(press);
-		if (top_lim) {  // if somehow we're not at the top at the ready state
-//			press->press_state.mode = PRESS_ERROR;
+		if (top_lim) {
+			// if somehow we're not at the top at the ready state
 			press->press_state.error_code |= ERR_OVERSHOOT;
 		}
-		if (press_active) { // both buttons pressed and tray closed
-			press->press_state.ticks_until_next = FAST_PRESS_TIME + SLOW_PRESS_TIME;
+		if (press_active) {
+			// both buttons pressed and tray closed
+			// setup everything
+			press->press_state.ticks_until_next = PRESS_TIME_FASTDROP;
 			press->press_state.burp_ctr = press->press_setpoint.burps;
+			press->press_state.cycle = PRESS_FASTDROP;
 			press->press_state.mode = PRESS_DOWN;
 		}
 		break;
+
 	case PRESS_ERROR:
-		press->press_state.current_limit = MAX_CURRENT;
-		press->press_state.motor_setpoint = -0.2f;
-		press->press_state.burping = 0;
+		press->press_state.current_limit = MOTOR_CURRENT_LOW;
+		press->press_state.motor_setpoint = -DUTY_CYCLE_JOG;
+		// top limit switch triggered
 		if (!top_lim) {
 			press->press_state.mode = PRESS_DONE;
-			press->press_state.motor_setpoint = 0.0f;
+//			press->press_state.motor_setpoint = 0.0f;
 		}
-//		press->press_state.motor_setpoint = 0.0f;
-//		if (!top_lim) {
-//			press->press_state.mode = PRESS_DONE;
-//		} else if (press_active) {
-//			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-//			press->press_state.motor_setpoint = -MAX_DUTY_CYCLE;
-//		}
 		break;
+
 	case PRESS_DOWN:
-		press->press_state.ticks_until_next--;
-		if (press->press_state.ticks_until_next > SLOW_PRESS_TIME) {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = MAX_DUTY_CYCLE;
-		} else if (press->press_state.ticks_until_next > 0) {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = SLOW_PRESS_DUTY;
-			press->press_state.burping = 1;
+		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
+		if (press->press_state.cycle == PRESS_FASTDROP) {
+			press->press_state.motor_setpoint = DUTY_CYCLE_FAST;
 		} else {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = 0.0f;
-			press->press_state.overload_flag = true;
-			if (press->press_state->burp_ctr > 0) {
-				press->press_state.ticks_until_next = PRESS_TIME_BURP;
-			} else {
-				press->press_state.ticks_until_next = press->press_setpoint.press_time_ticks;
-			}
-
-			press->press_state.mode = PRESS_DWELL;
+			press->press_state.motor_setpoint = DUTY_CYCLE_SLOW;
 		}
 
+		if (press->press_state.ticks_until_next-- <= 0) {
+			if (press->press_state.cycle == PRESS_FASTDROP) {
+				// exit fast drop mode
+				press->press_state.cycle = PRESS_PERIOD1;
+				press->press_state.ticks_until_next = press->press_setpoint.press_ticks1;
+			} else if (press->press_setpoint.auto_mode){
+				// go to dwell mode
+				press->press_state.mode = PRESS_DWELL;
+			}
+		}
+
+		// Press has bottomed out
 		if (!bottom_lim) {
-			press->press_state.motor_setpoint = 0.0f;
-			press->press_state.overload_flag = false;
-			if (press->press_state->burp_ctr > 0) {
-				press->press_state.ticks_until_next = PRESS_TIME_BURP;
-			} else {
-				press->press_state.ticks_until_next = press->press_setpoint.press_time_ticks;
-			}
 			press->press_state.mode = PRESS_DWELL;
+			if (press->press_state.cycle == PRESS_FASTDROP) {
+				press->press_state.ticks_until_next = press->press_setpoint.press_ticks1;
+				press->press_state.cycle = PRESS_PERIOD1;
+			}
 		}
+
+		// manual mode and buttons released
 		if (!press->press_setpoint.auto_mode && !press_active) {
 			press->press_state.mode = PRESS_UP;
 		}
-		if (press->press_setpoint.auto_mode && !press->press_state.burping && !press_active) {
+
+		// auto mode and not down, buttons released
+		if (press->press_setpoint.auto_mode
+				&& (press->press_state.cycle == PRESS_FASTDROP)
+				&& !press_active) {
 			press->press_state.motor_setpoint = 0.0f;
 			press->press_state.mode = PRESS_ERROR;
 		}
 		break;
+
 	case PRESS_DWELL:
-		press->press_state.current_limit = MAX_CURRENT_NORMAL;
+		press->press_state.current_limit = MOTOR_CURRENT_LOW;
 		press->press_state.motor_setpoint = 0.0f;
-		if (bottom_lim) {  // if the bottom sensor is not triggered
-//			press->press_state.mode = PRESS_ERROR;
+
+		// if the bottom sensor is not triggered
+		if (bottom_lim) {
 			press->press_state.error_code |= ERR_OVERSHOOT;
 		}
-		if (!press->press_setpoint.auto_mode) {
-			if (!press_active) {
+
+		// Manual mode and press buttons released
+		if (!press->press_setpoint.auto_mode && !press_active) {
+			press->press_state.mode = PRESS_UP;
+		}
+
+		// Auto mode and ticks expired
+		if (press->press_setpoint.auto_mode &&
+				(press->press_state.ticks_until_next-- <= 0))
+		{
+			switch (press->press_state.cycle) {
+
+			case PRESS_FASTDROP:
+			case PRESS_PERIOD1:
+				press->press_state.cycle = PRESS_TAPS;
+				break;
+
+			case PRESS_TAPS:
+				if (press->press_state.burp_ctr > 0) {
+					press->press_state.mode = PRESS_UP;
+					press->press_state.ticks_until_next = PRESS_TIME_TAP_UP;
+				} else {
+					press->press_state.cycle = PRESS_PERIOD2;
+					press->press_state.ticks_until_next = press->press_setpoint.press_ticks2;
+				}
+				break;
+
+			case PRESS_PERIOD2:
+			default:
 				press->press_state.mode = PRESS_UP;
-			}
-		} else {
-			if (press->press_state.ticks_until_next-- <= 0) {
-				press->press_state.ticks_until_next = press->press_setpoint.burp_ticks;
-				press->press_state.mode = PRESS_UP;
-				press->press_state.burping = 1;
+				break;
 			}
 		}
 		break;
+
 	case PRESS_UP:
+		// Default speed setting
 		if (press->press_setpoint.auto_mode && (press->press_state.burp_ctr > 0)) {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = -SLOW_PRESS_DUTY;
+			press->press_state.current_limit = MOTOR_CURRENT_LOW;
+			press->press_state.motor_setpoint = -DUTY_CYCLE_SLOW;
 		} else {
-			press->press_state.current_limit = MAX_CURRENT_NORMAL;
-			press->press_state.motor_setpoint = -MAX_DUTY_CYCLE;
+			press->press_state.current_limit = MOTOR_CURRENT_LOW;
+			press->press_state.motor_setpoint = -DUTY_CYCLE_FAST;
 		}
-		if (!press->press_setpoint.auto_mode) {
-			if (press_active) {
-				press->press_state.mode = PRESS_DOWN;
-			}
-		} else if ((press->press_state.burp_ctr > 0) && (press->press_state.ticks_until_next-- <= 0)){
+
+		// Tap timer expired
+		if (press->press_setpoint.auto_mode
+				&& (press->press_state.burp_ctr > 0)
+				&& (press->press_state.ticks_until_next-- <= 0)){
 			press->press_state.burp_ctr--;
 			press->press_state.mode = PRESS_DOWN;
-			press->press_state.ticks_until_next = SLOW_PRESS_TIME;
+			press->press_state.ticks_until_next = PRESS_TIME_TAP_DOWN;
 		}
+
+		// Manual mode and buttons pressed
+		if (!press->press_setpoint.auto_mode && press_active) {
+			press->press_state.cycle = PRESS_PERIOD1;
+			press->press_state.mode = PRESS_DOWN;
+			press->press_state.ticks_until_next = press->press_setpoint.press_ticks1;
+		}
+
+		// top limit reached!
 		if (!top_lim) {
 			press->press_state.mode = PRESS_DONE;
 			press_count++;
@@ -277,33 +308,35 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 			}
 		}
 		break;
+
 	case PRESS_DONE:
-		press->press_state.current_limit = MAX_CURRENT_NORMAL;
+		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_setpoint = 0.0f;
-		press->press_state.burping = 0;
-		if (left_button && right_button) {  // both buttons released
+
+
+		// both buttons released
+		if (left_button && right_button) {
 			press->press_state.mode = PRESS_READY;
 		}
 		break;
+
 	case PRESS_JOG:
-		press->press_state.current_limit = MAX_CURRENT_JOG;
+		press->press_state.current_limit = MOTOR_CURRENT_LOW;
 		press->press_state.motor_setpoint = 0.0f;
-		press->press_state.burping = 0;
 
 		if (top_lim && menu_up_button.state && !menu_down_button.state) {
-			press->press_state.motor_setpoint = -MAX_DUTY_JOG;
+			press->press_state.motor_setpoint = -DUTY_CYCLE_JOG;
 		}
 
 		if (bottom_lim && menu_down_button.state && !menu_up_button.state) {
-			press->press_state.motor_setpoint = MAX_DUTY_JOG;
+			press->press_state.motor_setpoint = DUTY_CYCLE_JOG;
 		}
 		break;
+
 	default:
-		press->press_state.current_limit = MAX_CURRENT;
+		press->press_state.current_limit = MOTOR_CURRENT_LOW;
 		press->press_state.motor_setpoint = 0.0f;
-//		press->press_state.mode = PRESS_ERROR;
 		press->press_state.error_code |= ERR_OVERSHOOT;
-		press->press_state.burping = 0;
 	}
 
 	motor_pwm_update(&htim1, press, shunt_current);
@@ -334,8 +367,8 @@ void motor_pwm_update(TIM_HandleTypeDef *htim, Press* press, float current) {
 
 	press->press_state.motor_setpoint =
 			clip(press->press_state.motor_setpoint,
-					MAX_DUTY_CYCLE,
-					-MAX_DUTY_CYCLE);
+					DUTY_CYCLE_FAST,
+					-DUTY_CYCLE_FAST);
 	float step;
 	const float deadband = 0.5f;
 	float itarget;
@@ -386,8 +419,8 @@ void motor_pwm_update(TIM_HandleTypeDef *htim, Press* press, float current) {
 
 	press->press_state.motor_slew_limited_setpoint =
 			clip(press->press_state.motor_slew_limited_setpoint + step,
-					MAX_DUTY_CYCLE,
-					-MAX_DUTY_CYCLE);
+					DUTY_CYCLE_FAST,
+					-DUTY_CYCLE_FAST);
 
 
 	int16_t pwm_cmd = (int16_t) (press->press_state.motor_slew_limited_setpoint * duty_to_cmd);
@@ -428,6 +461,7 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 
 		// Detect if any fault bits are set
 		bool fault_state = (thermo_buf[1] & 0b1u) || (thermo_buf[3] & 0b111u);
+//		bool fault_state = thermo_buf[3] & 0b101u;
 		if (fault_state) {
 			press->thermal_state.error_code |= (ERR_BAD_TOP_THERMO1 << active_thermocouple);
 			press->thermal_state.bad_read_countdown[active_thermocouple] = 1000;
@@ -437,15 +471,15 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 			} else {
 				press->thermal_state.bad_read_countdown[active_thermocouple]--;
 			}
-			// decode (big-endian) temperature
-			int16_t temp_raw = (thermo_buf[0] << 8) + thermo_buf[1];
-			float measured_temp = temp_raw * 0.0625f;
-
-			// Low pass filtering
-			press->thermal_state.temp_buf[active_thermocouple] =
-					(1.0f - THERM_FILTER_COEFF) * press->thermal_state.temp_buf[active_thermocouple] +
-					THERM_FILTER_COEFF * measured_temp;
 		}
+		// decode (big-endian) temperature
+		int16_t temp_raw = (thermo_buf[0] << 8) + thermo_buf[1];
+		float measured_temp = ((float) temp_raw) * 0.0625f;
+
+		// Low pass filtering
+		press->thermal_state.temp_buf[active_thermocouple] =
+				(1.0f - THERM_FILTER_COEFF) * press->thermal_state.temp_buf[active_thermocouple] +
+				THERM_FILTER_COEFF * measured_temp;
 
 		// Read next thermocouple
 		active_thermocouple++;
@@ -458,15 +492,14 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 }
 
 void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
-	float top_temp, bottom_temp;
 	if (!(press->thermal_state.error_code & ERR_BAD_TOP_THERMO1)) {
-		top_temp = press->thermal_state.top1;
+		press->thermal_state.top_temp = press->thermal_state.top1;
 		press->thermal_state.error &= ~1;
 	} else if (!(press->thermal_state.error_code & ERR_BAD_TOP_THERMO2)) {
-		top_temp = press->thermal_state.top2;
+		press->thermal_state.top_temp = press->thermal_state.top2;
 		press->thermal_state.error &= ~1;
 	} else {
-		top_temp = 1000.0f; // set unreasonably high to guarantee controller turns off
+		press->thermal_state.top_temp = 1000.0f; // set unreasonably high to guarantee controller turns off
 //		press->thermal_setpoint.enable = false;
 		press->thermal_state.error |= 1;
 		__WRITE_TOP_PLATTER_HEAT(0);
@@ -475,13 +508,13 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 	}
 
 	if (!(press->thermal_state.error_code & ERR_BAD_BOTTOM_THERMO1)) {
-		bottom_temp = press->thermal_state.bottom1;
+		press->thermal_state.bottom_temp = press->thermal_state.bottom1;
 		press->thermal_state.error &= ~2;
 	} else if (!(press->thermal_state.error_code & ERR_BAD_BOTTOM_THERMO2)) {
-		bottom_temp = press->thermal_state.bottom2;
+		press->thermal_state.bottom_temp = press->thermal_state.bottom2;
 		press->thermal_state.error &= ~2;
 	} else {
-		bottom_temp = 1000.0f; // set unreasonably high
+		press->thermal_state.bottom_temp = 1000.0f; // set unreasonably high
 //		press->thermal_setpoint.enable = false;
 		press->thermal_state.error |= 2;
 //		__WRITE_TOP_PLATTER_HEAT(0);
@@ -497,15 +530,15 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 		return;
 	}
 
-	if (press->thermal_setpoint.top_temp - top_temp > 3.0f) {
+	if (press->thermal_setpoint.top_temp - press->thermal_state.top_temp > 3.0f) {
 		press->thermal_state.top_ready = false;
 	}
-	if (press->thermal_setpoint.bottom_temp - bottom_temp > 3.0f) {
+	if (press->thermal_setpoint.bottom_temp - press->thermal_state.bottom_temp > 3.0f) {
 		press->thermal_state.bottom_ready = false;
 	}
 
-	bool top_heat_on = top_temp < press->thermal_state.top_threshold;
-	bool bottom_heat_on = bottom_temp < press->thermal_state.bottom_threshold;
+	bool top_heat_on = press->thermal_state.top_temp < press->thermal_state.top_threshold;
+	bool bottom_heat_on = press->thermal_state.bottom_temp < press->thermal_state.bottom_threshold;
 
 	__WRITE_TOP_PLATTER_HEAT(top_heat_on);
 	__WRITE_BOTTOM_PLATTER_HEAT(bottom_heat_on);
@@ -527,6 +560,27 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 				press->thermal_setpoint.bottom_temp - THERM_DEADBAND;
 		press->thermal_state.bottom_ready = true;
 	}
+}
+
+
+int getTopTempDisplay(Press* press) {
+	float temp;
+	if (press->config.flags & CONFIG_UNITS_FLAG) {
+		temp = press->thermal_state.top_temp;
+	} else {
+		temp = __C_TO_F_FLOAT(press->thermal_state.top_temp);
+	}
+	return lroundf(clip(temp, 999.0f, 0.0f));
+}
+
+int getBottomTempDisplay(Press* press) {
+	float temp;
+	if (press->config.flags & CONFIG_UNITS_FLAG) {
+		temp = press->thermal_state.bottom_temp;
+	} else {
+		temp = __C_TO_F_FLOAT(press->thermal_state.bottom_temp);
+	}
+	return lroundf(clip(temp, 999.0f, 0.0f));
 }
 
 

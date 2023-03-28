@@ -10,8 +10,8 @@
 Press press = {
 		.press_setpoint = {
 				.burps = 1,
-				.press_time_ticks = 1000,
-				.burp_ticks = 500,
+				.press_ticks1 = DEFAULT_PRESS_TIME,
+				.press_ticks2 = DEFAULT_PRESS_TIME,
 				.auto_mode = false,
 				.enable = false
 		},
@@ -29,10 +29,12 @@ Press press = {
 		},
 
 		.thermal_state = {
-				.top1 = 100,
-				.top2 = 100,
-				.bottom1 = 100,
-				.bottom2 = 100,
+				.top1 = 999,
+				.top2 = 999,
+				.bottom1 = 999,
+				.bottom2 = 999,
+				.top_temp = 999.0f,
+				.bottom_temp = 999.0f,
 				.error = 0,
 				.error_code = 0
 		},
@@ -41,7 +43,8 @@ Press press = {
 				.flags = DEFAULT_CONFIG_FLAGS,
 				.top_temp = DEFAULT_TOP_TEMP,
 				.bottom_temp = DEFAULT_BOTTOM_TEMP,
-				.press_time = DEFAULT_PRESS_TIME,
+				.press_time1 = DEFAULT_PRESS_TIME,
+				.press_time2 = DEFAULT_PRESS_TIME,
 				.burps = DEFAULT_BURPS
 		},
 };
@@ -71,19 +74,21 @@ void reset_defaults(Config* config) {
 	config->flags = DEFAULT_CONFIG_FLAGS;
 	config->top_temp = DEFAULT_TOP_TEMP;
 	config->bottom_temp = DEFAULT_BOTTOM_TEMP;
-	config->press_time = DEFAULT_PRESS_TIME;
+	config->press_time1 = DEFAULT_PRESS_TIME;
+	config->press_time2 = DEFAULT_PRESS_TIME;
 	config->burps = DEFAULT_BURPS;
 }
 
 void config_to_setpoints(Press* press) {
 	if (press->config.flags & CONFIG_UNITS_FLAG) { // if using celsius
-		press->thermal_setpoint.top_temp = press->config.top_temp;
-		press->thermal_setpoint.bottom_temp = press->config.bottom_temp;
+		press->thermal_setpoint.top_temp = (float) press->config.top_temp;
+		press->thermal_setpoint.bottom_temp = ( float)press->config.bottom_temp;
 	} else {
-		press->thermal_setpoint.top_temp = __F_TO_C(press->config.top_temp);
-		press->thermal_setpoint.bottom_temp = __F_TO_C(press->config.bottom_temp);
+		press->thermal_setpoint.top_temp = __F_TO_C_FLOAT((float) press->config.top_temp);
+		press->thermal_setpoint.bottom_temp = __F_TO_C_FLOAT((float) press->config.bottom_temp);
 	}
-	press->press_setpoint.press_time_ticks = press->config.press_time;
+	press->press_setpoint.press_ticks1 = press->config.press_time1;
+	press->press_setpoint.press_ticks2 = press->config.press_time2;
 	press->press_setpoint.burps = press->config.burps;
 	press->press_setpoint.auto_mode = press->config.flags & CONFIG_MODE_FLAG;
 }

@@ -17,23 +17,26 @@
 #define ECO_TIMEOUT 900000ul // 15 minutes = 900 seconds
 
 // duty cycle
-#define MAX_DUTY_CYCLE 0.99f
-#define MAX_SLEW_RATE 0.007f
+#define MAX_SLEW_RATE 0.01f
 
-#define MAX_DUTY_JOG 0.2f
-#define MAX_CURRENT_JOG 5.0f
+#define DUTY_CYCLE_FAST 0.99f
+#define DUTY_CYCLE_SLOW 0.5f
+#define DUTY_CYCLE_JOG 0.3f
+
+
+#define PRESS_TIME_FASTDROP 1000
+#define PRESS_TIME_TAP_UP 700
+#define PRESS_TIME_TAP_DOWN 2000
+
 
 // overcurrent protection
-#define MAX_CURRENT 14.0f
-#define MAX_CURRENT_NORMAL 10.0f
-#define MAX_CURRENT_SQR (MAX_CURRENT*MAX_CURRENT)
+#define MOTOR_CURRENT_MAX 14.0f
+#define MOTOR_CURRENT_HIGH 8.0f
+#define MOTOR_CURRENT_LOW 4.0f
+
+#define MAX_CURRENT_SQR (MOTOR_CURRENT_MAX*MOTOR_CURRENT_MAX)
 #define CURRENT_FILT 0.05f
 
-#define FAST_PRESS_TIME 1000
-#define SLOW_PRESS_TIME 3000
-#define SLOW_PRESS_DUTY 0.35f
-
-#define PRESS_TIME_BURP 1000
 
 // current measurement
 #define R_SHUNT 0.002f
@@ -43,7 +46,7 @@
 
 // thermal control
 #define THERM_FILTER_COEFF 0.01f	// update rate of 250 Hz --> 400 ms time constant
-#define THERM_DEADBAND 1.5f
+#define THERM_DEADBAND 0.5f
 
 // error code flags
 #define PRESS_OK 0u
@@ -74,5 +77,8 @@ void motor_pwm_update(TIM_HandleTypeDef*, Press*, float);
 
 HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef*, Press*);
 void thermal_control_loop(SPI_HandleTypeDef*, Press*);
+
+int getTopTempDisplay(Press*);
+int getBottomTempDisplay(Press*);
 
 #endif /* INC_CONTROL_H_ */

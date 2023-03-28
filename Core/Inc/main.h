@@ -40,7 +40,7 @@ extern "C" {
 
 #include "structs.h"
 
-#define CYCLE_MODE
+//#define CYCLE_MODE
 
 /* USER CODE END Includes */
 
@@ -91,6 +91,9 @@ extern Button tray_interlock;
 #define __F_TO_C(f) ((5*((f)-32))/9)
 #define __C_TO_F(c) (32+(((c)*9)/5))
 #define __ROUND5(x) ((((x)+2)/5)*5)
+
+#define __F_TO_C_FLOAT(f) (((f)-32.0f)/1.8f)
+#define __C_TO_F_FLOAT(c) (32.0f+((c)*1.8f))
 
 #define __READ_UP_SW() (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_15))
 #define __READ_DOWN_SW() (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
