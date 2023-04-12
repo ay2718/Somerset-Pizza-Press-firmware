@@ -91,12 +91,13 @@ typedef struct {
 typedef	union {
 	uint32_t regs[5];
 	struct {
-		uint16_t flags;
+		uint16_t flags; //reg0
 		int16_t top_temp;
-		int16_t bottom_temp;
+		int16_t bottom_temp; //reg1
 		int16_t press_time1;
-		int16_t press_time2;
+		int16_t press_time2; //reg2
 		int16_t burps;
+		uint32_t ctr; //reg3
 	};
 } Config;
 

@@ -41,7 +41,7 @@
 // current measurement
 #define R_SHUNT 0.002f
 #define ADC_VOLTAGE 3.3f
-#define SHUNT_GAIN 20.0f
+#define SHUNT_GAIN 43.0f
 #define ADC_CONV_FACTOR (ADC_VOLTAGE / (SHUNT_GAIN * R_SHUNT * 4096.0f))
 
 // thermal control

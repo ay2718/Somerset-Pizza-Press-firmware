@@ -130,6 +130,12 @@ MenuItem jog_menu = {
 		.display = &jog_display
 };
 
+MenuItem lifetime_menu = {
+		.type = MENU_DEBUG,
+		.name = "Lifetime Cycles",
+		.display = &lifetime_display
+};
+
 MenuItem debug_menu = {
 		.type = MENU_DEBUG,
 		.name = "Diagnostics",
@@ -167,6 +173,7 @@ void init_menus(void) {
 
 	link_menus(&service_menu, &jog_menu);
 	link_menus(&service_menu, &units_menu);
+	link_menus(&service_menu, &lifetime_menu);
 	link_menus(&service_menu, &debug_menu);
 #ifdef CYCLE_MODE
 	link_menus(&service_menu, &cycle_menu);
@@ -406,6 +413,15 @@ HAL_StatusTypeDef debug_display(MenuItem* item) {
 	len = sprintf(msg, "State:%d", press.press_state.mode);
 	set_row(msg, 7, 0); memset(msg, 0, 32);
 
+	return write_row(0);
+}
+
+HAL_StatusTypeDef lifetime_display(MenuItem* item) {
+	set_row("LIFETIME", 0, 1);
+	char str[32];
+	int len;
+	len = sprintf(str, "Cycles: %d", press.config.ctr);
+	set_row(str, 3, 0);
 	return write_row(0);
 }
 

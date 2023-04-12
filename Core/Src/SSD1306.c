@@ -124,7 +124,7 @@ HAL_StatusTypeDef SSD1306_sendDataByte(uint8_t data){
 
 HAL_StatusTypeDef SSD1306_sendData(uint8_t* data, uint16_t len){
 	HAL_GPIO_WritePin(SCREEN_DATASEL_GPIO_Port, SCREEN_DATASEL_Pin, GPIO_PIN_SET);
-	return SSD1306_spiWriteDMA(data, len);
+	return SSD1306_spiWrite(data, len);
 }
 
 HAL_StatusTypeDef SSD1306_setPageAddress(uint8_t start, uint8_t end) {
@@ -254,7 +254,10 @@ HAL_StatusTypeDef SSD1306_writeFrameBufRow( uint8_t page ) {
 
 	//SSD1306_i2cWrite(framebuf, COLUMNS+FRAME_BUF_OFFSET);   // takes about 3.2ms to write whole thing
 //	return SSD1306_i2cWrite(framebuf, COLUMNS+FRAME_BUF_OFFSET);  // takes 18 MICROSECONDS!!! sheeeeeet
-	return SSD1306_sendData(framebuf, COLUMNS+FRAME_BUF_OFFSET);
+	SSD1306_setPageAddress(page, MAX_PAGE);
+	SSD1306_setColumnAddress(0, MAX_COL);
+	HAL_GPIO_WritePin(SCREEN_DATASEL_GPIO_Port, SCREEN_DATASEL_Pin, GPIO_PIN_SET);
+	return SSD1306_sendData(framebuf + FRAME_BUF_OFFSET, COLUMNS);
 }
 
 HAL_StatusTypeDef SSD1306_WriteRow( uint8_t page ) {

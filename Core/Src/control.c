@@ -316,6 +316,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 
 		// both buttons released
 		if (left_button && right_button) {
+			press->config.ctr++;
 			press->press_state.mode = PRESS_READY;
 		}
 		break;

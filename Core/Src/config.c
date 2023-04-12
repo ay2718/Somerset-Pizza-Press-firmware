@@ -66,7 +66,9 @@ void restore_settings(Config* config) {
 	config->regs[4] = HAL_RTCEx_BKUPRead(&hrtc, RTC_BKP_DR4);
 
 	if (!(config->flags & DEFAULT_CONFIG_FLAGS)) {
+		config->ctr = 0;
 		reset_defaults(config);
+		backup_settings(config);
 	}
 }
 

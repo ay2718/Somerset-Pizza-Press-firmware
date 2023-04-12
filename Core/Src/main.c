@@ -54,6 +54,7 @@ RTC_HandleTypeDef hrtc;
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
+DMA_HandleTypeDef hdma_spi2_tx;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
@@ -133,6 +134,10 @@ int main(void)
   /* USER CODE BEGIN 2 */
   MX_ADC_Init();
 
+  HAL_Delay(100);
+  HAL_ADCEx_Calibration_Start(&hadc);
+  HAL_Delay(100);
+
   // __HAL_RCC_PWR_CLK_ENABLE(); // duplicated in HAL_Init
   HAL_PWR_EnableBkUpAccess(); //enable RTC backup regs
 
@@ -146,9 +151,8 @@ int main(void)
 
   // pc_uart_init(&huart1);
 
-  HAL_Delay(2000);
-  HAL_ADCEx_Calibration_Start(&hadc);
-  HAL_Delay(1000);
+  HAL_Delay(100);
+
   press.press_setpoint.enable = true;
   press.thermal_setpoint.enable = true;
 
@@ -171,6 +175,7 @@ int main(void)
   menu_up_button.rising_edge_flag = 0;
   menu_down_button.rising_edge_flag = 0;
   menu_enter_button.rising_edge_flag = 0;
+
   MX_IWDG_Init();
 
 
@@ -264,7 +269,7 @@ int main(void)
 			  "%d C\t %d C\t %d C\t %d C\n\r"
 			  "Safe: %d\t Top TR: %d\t Bottom TR: %d\n\r"
 			  "Act L: %d\t Act R: %d\n\r"
-			  "Motor: %d%%\t Current: %dA\n\r"
+			  "Motor: %d%%\t Current: %dmA\n\r"
 			  "State: %d\n\r"
 			  "\n",
 			  (int) press.thermal_state.top1 % 1000,
@@ -280,7 +285,7 @@ int main(void)
 			  activate_right_button.state,
 
 			  (int) (100.0f*press.press_state.motor_setpoint),
-			  (int) shunt_current,
+			  (int) (shunt_current * 1000.0f),
 
 			  (int) press.press_state.mode
 			  );
@@ -307,16 +312,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI
-                              |RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
-  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV1;
+  RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -371,7 +373,7 @@ static void MX_ADC_Init(void)
   hadc.Init.LowPowerAutoWait = DISABLE;
   hadc.Init.LowPowerAutoPowerOff = DISABLE;
   hadc.Init.ContinuousConvMode = DISABLE;
-  hadc.Init.DiscontinuousConvMode = ENABLE;
+  hadc.Init.DiscontinuousConvMode = DISABLE;
   hadc.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T1_TRGO;
   hadc.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
   hadc.Init.DMAContinuousRequests = ENABLE;
@@ -714,6 +716,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  /* DMA1_Channel4_5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_5_IRQn);
 
 }
 

@@ -28,6 +28,7 @@ MenuItem* menu_enter(MenuItem*);
 HAL_StatusTypeDef menu_return_home(void);
 
 HAL_StatusTypeDef debug_display(MenuItem*);
+HAL_StatusTypeDef lifetime_display(MenuItem*);
 HAL_StatusTypeDef status_display(MenuItem*);
 HAL_StatusTypeDef thermocouple_readout(void);
 
