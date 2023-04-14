@@ -51,25 +51,35 @@ MenuItem press_reset_count = {
 
 MenuItem mode_menu = {
 		.type=MENU_FLAG, // not implemented
-		.name="Mode",
+		.name="Auto Mode",
 		.display=&manual_mode_display,
 		.flag=CONFIG_MODE_FLAG,
 		.target=&(press.config.flags)
 };
 
-MenuItem press_time_menu = {
+MenuItem press_time1_menu = {
 		.type=MENU_NUM,
-		.name="Press Time",
+		.name="1st Press Time",
 		.lower=PRESS_TIME_LOWER_LIM,
 		.upper=PRESS_TIME_UPPER_LIM,
 		.step=500,
 		.display=&press_time_display,
-		.target=&(press.config.press_time)
+		.target=&(press.config.press_time1)
+};
+
+MenuItem press_time2_menu = {
+		.type=MENU_NUM,
+		.name="2nd Press Time",
+		.lower=0,
+		.upper=PRESS_TIME_UPPER_LIM,
+		.step=500,
+		.display=&press_time_display,
+		.target=&(press.config.press_time2)
 };
 
 MenuItem burps_menu = {
 		.type=MENU_NUM,
-		.name="Burps",
+		.name="Taps",
 		.lower=BURPS_LOWER_LIM,
 		.upper=BURPS_UPPER_LIM,
 		.step=1,
@@ -120,6 +130,12 @@ MenuItem jog_menu = {
 		.display = &jog_display
 };
 
+MenuItem lifetime_menu = {
+		.type = MENU_DEBUG,
+		.name = "Lifetime Cycles",
+		.display = &lifetime_display
+};
+
 MenuItem debug_menu = {
 		.type = MENU_DEBUG,
 		.name = "Diagnostics",
@@ -148,7 +164,8 @@ void init_menus(void) {
 	link_menus(&main_menu, &top_temp_menu);
 	link_menus(&main_menu, &bottom_temp_menu);
 	link_menus(&main_menu, &mode_menu);
-	link_menus(&main_menu, &press_time_menu);
+	link_menus(&main_menu, &press_time1_menu);
+	link_menus(&main_menu, &press_time2_menu);
 	link_menus(&main_menu, &burps_menu);
 	link_menus(&main_menu, &eco_mode_menu);
 	link_menus(&main_menu, &buzzer_menu);
@@ -156,6 +173,7 @@ void init_menus(void) {
 
 	link_menus(&service_menu, &jog_menu);
 	link_menus(&service_menu, &units_menu);
+	link_menus(&service_menu, &lifetime_menu);
 	link_menus(&service_menu, &debug_menu);
 #ifdef CYCLE_MODE
 	link_menus(&service_menu, &cycle_menu);
@@ -398,7 +416,17 @@ HAL_StatusTypeDef debug_display(MenuItem* item) {
 	return write_row(0);
 }
 
+HAL_StatusTypeDef lifetime_display(MenuItem* item) {
+	set_row("LIFETIME", 0, 1);
+	char str[32];
+	int len;
+	len = sprintf(str, "Cycles: %d", press.config.ctr);
+	set_row(str, 3, 0);
+	return write_row(0);
+}
+
 extern bool cycle_state;
+uint8_t eco_flash_ticks = 0;
 HAL_StatusTypeDef status_display(MenuItem* item) {
 	if (press.press_state.mode == PRESS_ERROR) { // TODO interlock error
 		if (tray_interlock.state) {
@@ -409,7 +437,15 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 //	} else if (press.thermal_state.error) {
 //		set_row("BAD THERMO!", 0, 1);
 	} else if (!press.thermal_setpoint.enable) {
-		set_row("ECO MODE", 0, 1);
+		if (((--eco_flash_ticks) & 0xf) < 8) {
+			set_row("", 0, 1);
+			set_row("", 2, 1);
+			set_row("", 4, 1);
+			set_row("", 6, 1);
+			return write_row(0);
+		} else {
+			set_row("ECO MODE", 0, 1);
+		}
 	} else if (!(press.thermal_state.top_ready && press.thermal_state.bottom_ready)) {
 		set_row("PREHEAT...", 0, 1);
 	} else if (press.press_state.mode == PRESS_READY){
@@ -422,11 +458,17 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 		set_row("PRESSING...", 0, 1);
 	}
 
+#ifdef CYCLE_MODE
 	{
 		char str[32] = {0};
-		sprintf(str, "Cycle mode: %d %d", cycle_mode, cycle_state);
+		if (cycle_mode) {
+			sprintf(str, "Cycle Mode On");
+		} else {
+			sprintf(str, "Cycle Mode Off");
+		}
 		set_row(str, 2, 0);
 	}
+#endif
 
 	char unit;
 	if (press.config.flags & CONFIG_UNITS_FLAG) {
@@ -435,20 +477,24 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 		unit = 'F';
 	}
 
-	if (press.thermal_setpoint.top_temp > 0){
+	if (press.thermal_setpoint.top_temp > 0.0f){
 		char str[32] = {0};
-		sprintf(str, "  %d %c", press.config.top_temp, unit);
+		sprintf(str, "%3d: %3d %c", press.config.top_temp, getTopTempDisplay(&press), unit);
 		set_row(str, 3, 1);
 	} else {
-		set_row("  OFF", 3, 1);
+		char str[32] = {0};
+		sprintf(str, "OFF: %3d %c", getTopTempDisplay(&press), unit);
+		set_row(str, 3, 1);
 	}
 
 	if (press.thermal_setpoint.bottom_temp > 0){
 		char str[32] = {0};
-		sprintf(str, "  %d %c", press.config.bottom_temp, unit);
+		sprintf(str, "%3d: %3d %c", press.config.bottom_temp, getBottomTempDisplay(&press), unit);
 		set_row(str, 5, 1);
 	} else {
-		set_row("  OFF", 5, 1);
+		char str[32] = {0};
+		sprintf(str, "OFF: %3d %c", getBottomTempDisplay(&press), unit);
+		set_row(str, 5, 1);
 	}
 
 	{

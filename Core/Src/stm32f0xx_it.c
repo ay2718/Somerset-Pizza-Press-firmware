@@ -57,9 +57,11 @@
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_adc;
 extern ADC_HandleTypeDef hadc;
-extern DMA_HandleTypeDef hdma_i2c2_tx;
-extern I2C_HandleTypeDef hi2c2;
+extern DMA_HandleTypeDef hdma_spi2_tx;
+extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi2;
 extern TIM_HandleTypeDef htim1;
+extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -166,7 +168,7 @@ void DMA1_Channel4_5_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel4_5_IRQn 0 */
 
   /* USER CODE END DMA1_Channel4_5_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_i2c2_tx);
+  HAL_DMA_IRQHandler(&hdma_spi2_tx);
   /* USER CODE BEGIN DMA1_Channel4_5_IRQn 1 */
 
   /* USER CODE END DMA1_Channel4_5_IRQn 1 */
@@ -201,21 +203,45 @@ void TIM1_BRK_UP_TRG_COM_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles I2C2 global interrupt.
+  * @brief This function handles SPI1 global interrupt.
   */
-void I2C2_IRQHandler(void)
+void SPI1_IRQHandler(void)
 {
-  /* USER CODE BEGIN I2C2_IRQn 0 */
+  /* USER CODE BEGIN SPI1_IRQn 0 */
 
-  /* USER CODE END I2C2_IRQn 0 */
-  if (hi2c2.Instance->ISR & (I2C_FLAG_BERR | I2C_FLAG_ARLO | I2C_FLAG_OVR)) {
-    HAL_I2C_ER_IRQHandler(&hi2c2);
-  } else {
-    HAL_I2C_EV_IRQHandler(&hi2c2);
-  }
-  /* USER CODE BEGIN I2C2_IRQn 1 */
+  /* USER CODE END SPI1_IRQn 0 */
+  HAL_SPI_IRQHandler(&hspi1);
+  /* USER CODE BEGIN SPI1_IRQn 1 */
 
-  /* USER CODE END I2C2_IRQn 1 */
+  /* USER CODE END SPI1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles SPI2 global interrupt.
+  */
+void SPI2_IRQHandler(void)
+{
+  /* USER CODE BEGIN SPI2_IRQn 0 */
+
+  /* USER CODE END SPI2_IRQn 0 */
+  HAL_SPI_IRQHandler(&hspi2);
+  /* USER CODE BEGIN SPI2_IRQn 1 */
+
+  /* USER CODE END SPI2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART2 global interrupt.
+  */
+void USART2_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART2_IRQn 0 */
+
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* USER CODE BEGIN USART2_IRQn 1 */
+
+  /* USER CODE END USART2_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

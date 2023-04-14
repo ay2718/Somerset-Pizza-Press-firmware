@@ -11,11 +11,12 @@ int timeout_cnt;
 uint8_t _char_width;
 uint8_t _font;
 
-I2C_HandleTypeDef *ssd1306_i2c;
+//I2C_HandleTypeDef *ssd1306_i2c;
+SPI_HandleTypeDef *ssd1306_spi;
 
-void SSD1306_InitScreen(I2C_HandleTypeDef *hi2c) {   // init screen
+void SSD1306_InitScreen(SPI_HandleTypeDef *hspi) {   // init screen
 
-	ssd1306_i2c = hi2c;
+	ssd1306_spi = hspi;
 
 	int _vccstate = 0;
 
@@ -87,123 +88,43 @@ void SSD1306_InitScreen(I2C_HandleTypeDef *hi2c) {   // init screen
 	timeout_cnt = TIMEOUT_INIT;
 }
 
-// I2C stuff
-
-HAL_StatusTypeDef SSD1306_i2cWrite( uint8_t *buf, uint16_t num_bytes) {
-
-	/*
-	I2C1->CR2 &= ~(I2C_CR2_RD_WRN);               // set to write mode
-	I2C1->CR2 &=   ~(0xff << I2C_CR2_NBYTES_Pos);
-	I2C1->CR2 |= I2C_CR2_START |  (num_bytes << I2C_CR2_NBYTES_Pos);      // transfer X bits and start
-
-	int timeout = 10000;
-	while(I2C1->CR2 & I2C_CR2_START) {if(--timeout <= 0) { return 0; } }
-	timeout = 10000;
-	for (int i = 0; i < num_bytes; i++) {
-		I2C1->TXDR = buf[i];
-		while (!(I2C1->ISR & I2C_ISR_TXE)){
-			if(--timeout <= 0) { return 0; }
-		}
-	}
-
-	return 1;
-	*/
-
-	return HAL_I2C_Master_Transmit(ssd1306_i2c, SSD1306_SLAVE_ADDR,
-			buf, num_bytes, HAL_MAX_DELAY);
-}
-
-
-HAL_StatusTypeDef SSD1306_DMAi2cWrite( uint8_t *buf, uint16_t num_bytes) {
-
-	/*
-	I2C1->CR1 |= I2C_CR1_TXDMAEN;
-
-	I2C1->CR2 &= ~(I2C_CR2_RD_WRN);               // set to write mode
-	I2C1->CR2 &=   ~(0xff << I2C_CR2_NBYTES_Pos); // clear previous number of bytes
-
-	I2C1->CR2 |= num_bytes << I2C_CR2_NBYTES_Pos;      // transfer X bits
-
-	DMA1_Channel6->CCR &= ~DMA_CCR_EN;
-	DMA1_Channel6->CNDTR = num_bytes;
-	DMA1_Channel6->CCR |= DMA_CCR_EN;
-
-	I2C1->CR2 |= I2C_CR2_START;      // start
-	*/
-
-	return HAL_I2C_Master_Transmit_DMA(ssd1306_i2c, SSD1306_SLAVE_ADDR,
-			buf, num_bytes);
+HAL_StatusTypeDef SSD1306_spiWriteDMA( uint8_t *buf, uint16_t num_bytes ) {
+	return HAL_SPI_Transmit_DMA( ssd1306_spi, buf, num_bytes );
 
 }
 
-//HAL_StatusTypeDef SSD1306_IsReady() {
-//
-//	timeout_cnt--;
-//	if (timeout_cnt == 0) {SSD1306_ResetI2C(); timeout_cnt = TIMEOUT_INIT; return 0;}
-//
-//	if (DMA1_Channel6->CNDTR > 0) {return 0;}  // needed because I2C does not start immediately
-//
-//	if ( (((I2C1->ISR)&I2C_ISR_BUSY) == 0)  && (((I2C1->ISR)&I2C_ISR_TXE) != 0) ) {
-//		timeout_cnt = TIMEOUT_INIT;
-//		return 1;
-//	}
-//	else { return 0; }
-//}
-//
-//void SSD1306_ResetI2C() {
-//
-//	I2C1->CR1 &= ~I2C_CR1_PE;
-//	I2C1->CR1 &= ~I2C_CR1_PE;
-//	I2C1->CR1 &= ~I2C_CR1_PE;
-//	I2C1->CR1 &= ~I2C_CR1_PE;
-//	I2C1->CR1 &= ~I2C_CR1_PE;
-//	I2C1->CR1 &= ~I2C_CR1_PE;
-//	I2C1->CR1 &= ~I2C_CR1_PE;
-//	DMA1_Channel6->CCR &= ~DMA_CCR_EN;
-//	DMA1_Channel6->CNDTR = 0;
-//	I2C1->CR1 |= I2C_CR1_PE;
-//
-//	I2C1->ISR |= I2C_ISR_TXE;
-//
-//	I2C1->ICR |= I2C_ICR_OVRCF | I2C_ICR_ARLOCF | I2C_ICR_BERRCF;
-//	I2C1->ICR |= I2C_ICR_STOPCF | I2C_ICR_NACKCF | I2C_ICR_ADDRCF;
-//}
+HAL_StatusTypeDef SSD1306_spiWrite( uint8_t *buf, uint16_t num_bytes) {
+	return HAL_SPI_Transmit( ssd1306_spi, buf, num_bytes, HAL_MAX_DELAY );
+//	return HAL_SPI_Transmit_DMA( ssd1306_spi, buf, num_bytes );
+
+}
 
 HAL_StatusTypeDef SSD1306_command1(uint8_t c) {
-
-	// I2C
-	uint8_t control = 0x00;   // Co = 0, D/C = 0
-	uint8_t cmd[2];
-
-	cmd[0] = control;
-	cmd[1] = c;
-	return SSD1306_i2cWrite(cmd, 2);
+	HAL_GPIO_WritePin(SCREEN_DATASEL_GPIO_Port, SCREEN_DATASEL_Pin, GPIO_PIN_RESET);
+	return SSD1306_spiWrite(&c, 1);
 }
 
 HAL_StatusTypeDef SSD1306_sendCommand(uint8_t command, uint8_t param1, uint8_t param2) {
-
+	HAL_GPIO_WritePin(SCREEN_DATASEL_GPIO_Port, SCREEN_DATASEL_Pin, GPIO_PIN_RESET);
 	//  Note continuationbit is set, so COMMAND_MODE must be
 	//  repeated before each databyte that serves as parameter!
 
-	uint8_t databytes[6];
+	uint8_t databytes[3];
 
-	databytes[0] = COMMAND_MODE;
-	databytes[1] = command;
-	databytes[2] = COMMAND_MODE;
-	databytes[3] = param1;
-	databytes[4] = COMMAND_MODE;
-	databytes[5] = param2;
-	return SSD1306_i2cWrite(databytes, 6);    // Write command
-
+	databytes[0] = command;
+	databytes[1] = param1;
+	databytes[2] = param2;
+	return SSD1306_spiWrite(databytes, 3);    // Write command
 }
 
-HAL_StatusTypeDef SSD1306_sendData(uint8_t data){
+HAL_StatusTypeDef SSD1306_sendDataByte(uint8_t data){
+	HAL_GPIO_WritePin(SCREEN_DATASEL_GPIO_Port, SCREEN_DATASEL_Pin, GPIO_PIN_SET);
+	return SSD1306_spiWrite(&data, 1);
+}
 
-	uint8_t databytes[2];
-
-	databytes[0] = DATA_MODE;
-	databytes[1] = data;
-	return SSD1306_i2cWrite(databytes, 2);
+HAL_StatusTypeDef SSD1306_sendData(uint8_t* data, uint16_t len){
+	HAL_GPIO_WritePin(SCREEN_DATASEL_GPIO_Port, SCREEN_DATASEL_Pin, GPIO_PIN_SET);
+	return SSD1306_spiWrite(data, len);
 }
 
 HAL_StatusTypeDef SSD1306_setPageAddress(uint8_t start, uint8_t end) {
@@ -332,7 +253,11 @@ HAL_StatusTypeDef SSD1306_writeFrameBufRow( uint8_t page ) {
 	framebuf[9] = page;
 
 	//SSD1306_i2cWrite(framebuf, COLUMNS+FRAME_BUF_OFFSET);   // takes about 3.2ms to write whole thing
-	return SSD1306_i2cWrite(framebuf, COLUMNS+FRAME_BUF_OFFSET);  // takes 18 MICROSECONDS!!! sheeeeeet
+//	return SSD1306_i2cWrite(framebuf, COLUMNS+FRAME_BUF_OFFSET);  // takes 18 MICROSECONDS!!! sheeeeeet
+	SSD1306_setPageAddress(page, MAX_PAGE);
+	SSD1306_setColumnAddress(0, MAX_COL);
+	HAL_GPIO_WritePin(SCREEN_DATASEL_GPIO_Port, SCREEN_DATASEL_Pin, GPIO_PIN_SET);
+	return SSD1306_sendData(framebuf + FRAME_BUF_OFFSET, COLUMNS);
 }
 
 HAL_StatusTypeDef SSD1306_WriteRow( uint8_t page ) {
@@ -354,7 +279,7 @@ void SSD1306_clearDisplay() {
 
 	for (uint8_t page = 0; page < PAGES; page++) {
 		for (uint8_t col = 0; col < COLUMNS; col++) {
-			SSD1306_sendData(0x00);
+			SSD1306_sendDataByte(0x00);
 		}
 	}
 

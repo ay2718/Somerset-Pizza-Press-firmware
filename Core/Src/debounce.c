@@ -21,7 +21,16 @@ Button tray_interlock;
 bool debounce(Button* button, bool state) {
 	if (button->state == state) {
 		button->ctr = 0;
+		if (++button->repeat_ctr > REPEAT_TIME) {
+			button->repeat_ctr = REPEAT_TIME - REPEAT_INTERVAL;
+			if (button->state) {
+				button->rising_edge_flag = true;
+			} else {
+				button->falling_edge_flag = true;
+			}
+		}
 	} else {
+		button->repeat_ctr = 0;
 		if (++button->ctr > SETTLING_TIME) {
 			button->state = state;
 			if (state) {

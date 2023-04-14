@@ -14,6 +14,13 @@ typedef enum {
 } PressMode;
 
 typedef enum {
+	PRESS_FASTDROP,
+	PRESS_PERIOD1,
+	PRESS_TAPS,
+	PRESS_PERIOD2
+} PressCycleMode;
+
+typedef enum {
 	MENU,
 	MENU_NUM,
 	MENU_FLAG,
@@ -30,6 +37,7 @@ typedef enum {
 
 typedef struct {
 	int ctr;
+	int repeat_ctr;
 	bool state;
 	bool rising_edge_flag;
 	bool falling_edge_flag;
@@ -37,18 +45,18 @@ typedef struct {
 
 typedef struct {
 	int16_t burps;
-	uint16_t press_time_ticks;
-	uint16_t burp_ticks;
+	int16_t press_ticks1;
+	int16_t press_ticks2;
 	bool auto_mode;
 	bool enable;
 } PressSetpoint;
 
 typedef struct {
 	PressMode mode;
-	bool burping;
+	PressCycleMode cycle;
 	bool overload_flag;
 	int16_t burp_ctr;
-	uint16_t ticks_until_next;
+	int16_t ticks_until_next;
 	float motor_setpoint;
 	float motor_slew_limited_setpoint;
 	float current_limit;
@@ -56,8 +64,8 @@ typedef struct {
 } PressState;
 
 typedef struct {
-	int16_t top_temp;
-	int16_t bottom_temp;
+	float top_temp;
+	float bottom_temp;
 	bool enable;
 } ThermalSetpoint;
 
@@ -68,6 +76,8 @@ typedef struct {
 			float top1, bottom1, top2, bottom2;
 		};
 	};
+	float top_temp;
+	float bottom_temp;
 	float top_threshold;
 	float bottom_threshold;
 	bool top_ready;
@@ -81,11 +91,13 @@ typedef struct {
 typedef	union {
 	uint32_t regs[5];
 	struct {
-		uint16_t flags;
+		uint16_t flags; //reg0
 		int16_t top_temp;
-		int16_t bottom_temp;
-		int16_t press_time;
+		int16_t bottom_temp; //reg1
+		int16_t press_time1;
+		int16_t press_time2; //reg2
 		int16_t burps;
+		uint32_t ctr; //reg3
 	};
 } Config;
 
@@ -112,20 +124,14 @@ typedef struct __MenuItem{
 	// 2: yes/no entry
 	MenuType type;
 
-	union {
-		uint16_t length;  	// menu length
-		int16_t upper;		// numerical upper bound
-	};
+	uint16_t length;  	// menu length
+	int16_t upper;		// numerical upper bound
 
-	union {
-		uint16_t index;		// menu index
-		int16_t lower;		// numerical lower bound
-	};
+	uint16_t index;		// menu index
+	int16_t lower;		// numerical lower bound
 
-	union {
-		int16_t step;	// numerical entry step
-		int16_t flag;	// yes/no entry flag mask
-	};
+	int16_t step;	// numerical entry step
+	int16_t flag;	// yes/no entry flag mask
 
 	// if applicable, target modified by menu action
 	int16_t value;
