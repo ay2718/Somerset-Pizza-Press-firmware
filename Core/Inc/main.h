@@ -63,6 +63,8 @@ extern UART_HandleTypeDef huart2;
 extern MenuItem* current_menu;
 extern MenuItem status_menu;
 extern MenuItem debug_menu;
+extern MenuItem lifetime_menu;
+
 extern MenuItem jog_menu;
 
 extern Press press;

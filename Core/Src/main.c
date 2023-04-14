@@ -223,7 +223,7 @@ int main(void)
 			  menu_awake = 0;
 			  menu_last_used = ticks;
 		  }
-		  if (current_menu == &debug_menu) {
+		  if (current_menu == &debug_menu || current_menu == &lifetime_menu) {
 			  menu_awake = 0;
 			  menu_last_used = ticks;
 		  }

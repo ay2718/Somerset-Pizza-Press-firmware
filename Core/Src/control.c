@@ -303,6 +303,8 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		if (!top_lim) {
 			press->press_state.mode = PRESS_DONE;
 			press_count++;
+			press->config.ctr++;
+			backup_settings(&(press->config));
 			if (press->config.flags & CONFIG_BUZZER_FLAG) {
 				buzzer_ctr = 200;
 			}
@@ -316,7 +318,6 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 
 		// both buttons released
 		if (left_button && right_button) {
-			press->config.ctr++;
 			press->press_state.mode = PRESS_READY;
 		}
 		break;
