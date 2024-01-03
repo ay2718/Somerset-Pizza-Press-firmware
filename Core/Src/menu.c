@@ -7,6 +7,7 @@
 
 
 #include "menu.h"
+#include "control.h"
 
 MenuItem status_menu = {
 		.type=MENU_STATUS,
