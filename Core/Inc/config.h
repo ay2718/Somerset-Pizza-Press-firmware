@@ -36,6 +36,9 @@
 #define TEMP_LOWER_LIM_C 50
 #define TEMP_UPPER_LIM_C 130 // 205
 
+#define THERMO_SCALING_FACTOR 0.95f
+//#define THERMO_SCALING_FACTOR 1.0f
+
 void backup_settings(Config*);
 void restore_settings(Config*);
 void reset_defaults(Config*);

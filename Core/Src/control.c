@@ -476,7 +476,7 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 		}
 		// decode (big-endian) temperature
 		int16_t temp_raw = (thermo_buf[0] << 8) + thermo_buf[1];
-		float measured_temp = ((float) temp_raw) * 0.0625f;
+		float measured_temp = ((float) temp_raw) * 0.0625f * THERMO_SCALING_FACTOR;
 
 		// Low pass filtering
 		press->thermal_state.temp_buf[active_thermocouple] =
