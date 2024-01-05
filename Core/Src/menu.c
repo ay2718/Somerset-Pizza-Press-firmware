@@ -7,6 +7,7 @@
 
 
 #include "menu.h"
+#include "control.h"
 
 MenuItem status_menu = {
 		.type=MENU_STATUS,
@@ -54,7 +55,7 @@ MenuItem mode_menu = {
 		.name="Auto Mode",
 		.display=&manual_mode_display,
 		.flag=CONFIG_MODE_FLAG,
-		.target=&(press.config.flags)
+		.target=(int16_t*) &(press.config.flags)
 };
 
 MenuItem press_time1_menu = {
@@ -92,7 +93,7 @@ MenuItem eco_mode_menu = {
 		.name="Eco Mode",
 		.display=&generic_display,
 		.flag=CONFIG_ECO_FLAG,
-		.target=&(press.config.flags)
+		.target=(int16_t*) &(press.config.flags)
 };
 
 MenuItem buzzer_menu = {
@@ -100,7 +101,7 @@ MenuItem buzzer_menu = {
 		.name="Buzzer",
 		.display=&generic_display,
 		.flag=CONFIG_BUZZER_FLAG,
-		.target=&(press.config.flags)
+		.target=(int16_t*) &(press.config.flags)
 };
 
 MenuItem service_menu = {
@@ -120,7 +121,7 @@ MenuItem units_menu = {
 		.type = MENU_TEMP_UNITS,
 		.name = "Temp Units",
 		.display=&units_display,
-		.target=&(press.config.flags),
+		.target=(int16_t*) &(press.config.flags),
 		.flag = CONFIG_UNITS_FLAG
 };
 
@@ -420,7 +421,7 @@ HAL_StatusTypeDef lifetime_display(MenuItem* item) {
 	set_row("LIFETIME", 0, 1);
 	char str[32];
 	int len;
-	len = sprintf(str, "Cycles: %d", press.config.ctr);
+	len = sprintf(str, "Cycles: %d", (int) press.config.ctr);
 	set_row(str, 3, 0);
 	return write_row(0);
 }
@@ -499,7 +500,7 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 
 	{
 		char str[32] = {0};
-		sprintf(str, "Count: %d", press_count);
+		sprintf(str, "Count: %d", (int) press_count);
 		set_row(str, 7, 0);
 	}
 	return write_row(0);
@@ -629,7 +630,7 @@ HAL_StatusTypeDef write_row(uint8_t rownum) {
 
 HAL_StatusTypeDef write_row_innerfunc(void) {
 	char msg[32];
-	int len = sprintf(msg, "Writing to row %d\n\r", display_row);
+	sprintf(msg, "Writing to row %d\n\r", display_row);
 //	HAL_UART_Transmit(&huart2, msg, len, 100);
 	if (display_row >= 8) {
 		display_row = 0;

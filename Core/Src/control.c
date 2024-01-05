@@ -33,10 +33,15 @@ void lights_and_buzzers(Press *press) {
 
 	if (press->thermal_state.top_ready && press->thermal_state.bottom_ready) {
 		__WRITE_WHITE_LED(1);
-	} else if (white_led_ctr++ >= 1000) {
-		__TOGGLE_WHITE_LED();
-		white_led_ctr = 0;
 	}
+	else
+	{
+		__WRITE_WHITE_LED(0);
+	}
+//	else if (white_led_ctr++ >= 1000) {
+//		__TOGGLE_WHITE_LED();
+//		white_led_ctr = 0;
+//	}
 
 	if (press->press_state.mode == PRESS_READY) {
 		__WRITE_BLUE_LED(1);
