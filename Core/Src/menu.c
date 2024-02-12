@@ -28,7 +28,7 @@ MenuItem top_temp_menu = {
 		.name="Top Temp",
 		.lower=TEMP_LOWER_LIM_F,
 		.upper=TEMP_UPPER_LIM_F,
-		.step=5,
+		.step=1,
 		.display=&temperature_display,
 		.target=&(press.config.top_temp)
 };
@@ -38,7 +38,7 @@ MenuItem bottom_temp_menu = {
 		.name="Bottom Temp",
 		.lower=TEMP_LOWER_LIM_F,
 		.upper=TEMP_UPPER_LIM_F,
-		.step=5,
+		.step=1,
 		.display=&temperature_display,
 		.target=&(press.config.bottom_temp)
 };
@@ -329,13 +329,17 @@ MenuItem* menu_enter(MenuItem* item) {
 		bool current_temp_units = press.config.flags & CONFIG_UNITS_FLAG;
 		bool new_temp_units = item->value & item->flag;
 		if (current_temp_units && !new_temp_units) { // convert from C to F
-			press.config.top_temp = __ROUND5(__C_TO_F(press.config.top_temp)); // round to the nearest 5
-			press.config.bottom_temp = __ROUND5(__C_TO_F(press.config.bottom_temp));
+			//press.config.top_temp = __ROUND5(__C_TO_F(press.config.top_temp)); // round to the nearest 5
+			//press.config.bottom_temp = __ROUND5(__C_TO_F(press.config.bottom_temp));
+			press.config.top_temp = __C_TO_F(press.config.top_temp); // round to the nearest 5
+			press.config.bottom_temp = __C_TO_F(press.config.bottom_temp);
 		}
 
 		if (!current_temp_units && new_temp_units) { // convert from F to C
-			press.config.top_temp = __ROUND5(__F_TO_C(press.config.top_temp)); // round to the nearest 5
-			press.config.bottom_temp = __ROUND5(__F_TO_C(press.config.bottom_temp));
+			//press.config.top_temp = __ROUND5(__F_TO_C(press.config.top_temp)); // round to the nearest 5
+			//press.config.bottom_temp = __ROUND5(__F_TO_C(press.config.bottom_temp));
+			press.config.top_temp = __F_TO_C(press.config.top_temp); // round to the nearest 5
+			press.config.bottom_temp = __F_TO_C(press.config.bottom_temp);
 		}
 
 	}
