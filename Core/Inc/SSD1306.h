@@ -121,6 +121,7 @@ HAL_StatusTypeDef SSD1306_WriteRow( uint8_t page );
 void SSD1306_ClearBuf();
 HAL_StatusTypeDef SSD1306_IsReady();
 void SSD1306_setFont( uint8_t font );
+void SSD1306_setInvert( uint8_t invert );
 
 // internal functions
 void SSD1306_clearDisplay();

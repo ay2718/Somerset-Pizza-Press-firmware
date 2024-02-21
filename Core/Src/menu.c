@@ -154,6 +154,7 @@ MenuItem* current_menu = &status_menu;
 uint8_t display_row = 0;
 char screen_buf[256];
 uint8_t screen_fonts[8];
+uint8_t invert_row[8];
 extern uint32_t press_count;
 extern bool cycle_mode;
 
@@ -170,10 +171,10 @@ void init_menus(void) {
 	link_menus(&main_menu, &burps_menu);
 	link_menus(&main_menu, &eco_mode_menu);
 	link_menus(&main_menu, &buzzer_menu);
+	link_menus(&main_menu, &units_menu);
 	link_menus(&main_menu, &service_menu);
 
 	link_menus(&service_menu, &jog_menu);
-	link_menus(&service_menu, &units_menu);
 	link_menus(&service_menu, &lifetime_menu);
 	link_menus(&service_menu, &debug_menu);
 #ifdef CYCLE_MODE
@@ -482,7 +483,7 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 		unit = 'F';
 	}
 
-	if (press.thermal_setpoint.top_temp > 0.0f){
+	if (press.config.top_temp > 0.0f){
 		char str[32] = {0};
 		sprintf(str, "%3d: %3d %c", press.config.top_temp, getTopTempDisplay(&press), unit);
 		set_row(str, 3, 1);
@@ -492,7 +493,7 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 		set_row(str, 3, 1);
 	}
 
-	if (press.thermal_setpoint.bottom_temp > 0){
+	if (press.config.bottom_temp > 0){
 		char str[32] = {0};
 		sprintf(str, "%3d: %3d %c", press.config.bottom_temp, getBottomTempDisplay(&press), unit);
 		set_row(str, 5, 1);
@@ -520,6 +521,10 @@ HAL_StatusTypeDef generic_display(MenuItem* item) {
 		for (int row_index = 3; row_index < 8; row_index++, menu_index++) {
 			char str[32] = {0};
 			char cursor = (menu_index == item->index) ? '>' : ' ';
+			if (menu_index == item->index)
+			{
+				invert_row[row_index] = 1;
+			}
 			if (menu_index <= item->length && menu_index > 0) {
 				sprintf(str, "%c%s", cursor, (item->items[menu_index-1])->name);
 			} else if (menu_index == 0) {
@@ -639,12 +644,14 @@ HAL_StatusTypeDef write_row_innerfunc(void) {
 	if (display_row >= 8) {
 		display_row = 0;
 		busy_flag = false;
+		memset(invert_row, 0, 8);
 		return HAL_OK;
 	} else {
 		uint8_t font = screen_fonts[display_row];
 		char* row = screen_buf + (display_row << 5);
 		SSD1306_ClearBuf();
 		SSD1306_setFont(font);
+		SSD1306_setInvert(invert_row[display_row]);
 		SSD1306_writeString(0, row);
 		memset(row, 0, 32);
 		SSD1306_WriteRow(display_row++);

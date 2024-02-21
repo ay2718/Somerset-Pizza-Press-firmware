@@ -10,6 +10,7 @@ uint8_t framebuf[COLUMNS+FRAME_BUF_OFFSET];   // add control commands. Only a si
 int timeout_cnt;
 uint8_t _char_width;
 uint8_t _font;
+uint8_t _invert = 0;
 
 //I2C_HandleTypeDef *ssd1306_i2c;
 SPI_HandleTypeDef *ssd1306_spi;
@@ -213,6 +214,11 @@ void SSD1306_setFont( uint8_t font ) {
 
 }
 
+void SSD1306_setInvert( uint8_t invert )
+{
+	_invert = invert;
+}
+
 
 
 void SSD1306_writeCharToBuf( uint8_t col, char chr ) {
@@ -244,8 +250,6 @@ void SSD1306_writeCharToBuf( uint8_t col, char chr ) {
 			k++;
 		}
 	}
-
-
 }
 
 HAL_StatusTypeDef SSD1306_writeFrameBufRow( uint8_t page ) {
@@ -256,6 +260,12 @@ HAL_StatusTypeDef SSD1306_writeFrameBufRow( uint8_t page ) {
 //	return SSD1306_i2cWrite(framebuf, COLUMNS+FRAME_BUF_OFFSET);  // takes 18 MICROSECONDS!!! sheeeeeet
 	SSD1306_setPageAddress(page, MAX_PAGE);
 	SSD1306_setColumnAddress(0, MAX_COL);
+
+	for (int i = FRAME_BUF_OFFSET; i <= MAX_COL+FRAME_BUF_OFFSET; i++)
+	{
+		if (_invert) { framebuf[i] = ~framebuf[i]; }
+	}
+
 	HAL_GPIO_WritePin(SCREEN_DATASEL_GPIO_Port, SCREEN_DATASEL_Pin, GPIO_PIN_SET);
 	return SSD1306_sendData(framebuf + FRAME_BUF_OFFSET, COLUMNS);
 }
