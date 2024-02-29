@@ -18,7 +18,7 @@
 void init_menus(void);
 void link_menus(MenuItem*, MenuItem*);
 
-void set_row(char*, uint8_t, uint8_t);
+void set_row(const char*, uint8_t, uint8_t);
 HAL_StatusTypeDef write_row(uint8_t);
 
 MenuItem* menu_up(MenuItem*);

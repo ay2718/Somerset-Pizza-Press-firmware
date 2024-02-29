@@ -544,13 +544,13 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 		press->thermal_state.bottom_ready = false;
 	}
 
-	bool top_heat_on = press->thermal_state.top_temp < press->thermal_state.top_threshold;
-	bool bottom_heat_on = press->thermal_state.bottom_temp < press->thermal_state.bottom_threshold;
+	press->thermal_state.top_ssr_on = (press->thermal_state.top_temp < press->thermal_state.top_threshold);
+	press->thermal_state.bottom_ssr_on = (press->thermal_state.bottom_temp < press->thermal_state.bottom_threshold);
 
-	__WRITE_TOP_PLATTER_HEAT(top_heat_on);
-	__WRITE_BOTTOM_PLATTER_HEAT(bottom_heat_on);
+	__WRITE_TOP_PLATTER_HEAT(press->thermal_state.top_ssr_on);
+	__WRITE_BOTTOM_PLATTER_HEAT(press->thermal_state.bottom_ssr_on);
 
-	if (top_heat_on) {
+	if (press->thermal_state.top_ssr_on) {
 		press->thermal_state.top_threshold =
 				press->thermal_setpoint.top_temp + THERM_DEADBAND;
 	} else {
@@ -559,7 +559,7 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 		press->thermal_state.top_ready = true;
 	}
 
-	if (bottom_heat_on) {
+	if (press->thermal_state.bottom_ssr_on) {
 		press->thermal_state.bottom_threshold =
 				press->thermal_setpoint.bottom_temp + THERM_DEADBAND;
 	} else {

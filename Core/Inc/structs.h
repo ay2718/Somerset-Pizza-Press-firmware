@@ -85,6 +85,8 @@ typedef struct {
 	uint16_t bad_read_countdown[4];
 	uint8_t error;
 	uint32_t error_code;
+	bool top_ssr_on;
+	bool bottom_ssr_on;
 } ThermalState;
 
 // this allows us to map config settings to registers
@@ -138,7 +140,8 @@ typedef struct __MenuItem{
 	int16_t* target;
 
 	// item name
-	char name[16];
+	const char* name;
+	const char* titlename;
 
 	// NULL if top level
 	struct __MenuItem* parent;

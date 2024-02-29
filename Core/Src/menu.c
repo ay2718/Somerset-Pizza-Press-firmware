@@ -19,6 +19,28 @@ MenuItem status_menu = {
 MenuItem main_menu = {
 		.type=MENU,
 		.name="Main Menu",
+		.titlename=NULL,
+		.display=&generic_display
+};
+
+MenuItem temperature_menu = {
+		.type=MENU,
+		.name="Platen Temp Adj",
+		.titlename="PlatenTemp",
+		.display=&generic_display
+};
+
+MenuItem pressmode_menu = {
+		.type=MENU,
+		.name="Press Mode",
+		.titlename=NULL,
+		.display=&generic_display
+};
+
+MenuItem options_menu = {
+		.type=MENU,
+		.name="Options",
+		.titlename=NULL,
 		.display=&generic_display
 };
 
@@ -26,6 +48,7 @@ MenuItem main_menu = {
 MenuItem top_temp_menu = {
 		.type=MENU_TEMP,
 		.name="Top Temp",
+		.titlename="TopTemp",
 		.lower=TEMP_LOWER_LIM_F,
 		.upper=TEMP_UPPER_LIM_F,
 		.step=1,
@@ -36,6 +59,7 @@ MenuItem top_temp_menu = {
 MenuItem bottom_temp_menu = {
 		.type=MENU_TEMP,
 		.name="Bottom Temp",
+		.titlename="BottomTemp",
 		.lower=TEMP_LOWER_LIM_F,
 		.upper=TEMP_UPPER_LIM_F,
 		.step=1,
@@ -45,7 +69,8 @@ MenuItem bottom_temp_menu = {
 
 MenuItem press_reset_count = {
 		.type=MENU_RESET_COUNT,
-		.name="Reset Count?",
+		.name="Reset Count",
+		.titlename="ResetCount",
 		.display=&reset_display,
 		.value = 0
 };
@@ -53,6 +78,7 @@ MenuItem press_reset_count = {
 MenuItem mode_menu = {
 		.type=MENU_FLAG, // not implemented
 		.name="Auto Mode",
+		.titlename=NULL,
 		.display=&manual_mode_display,
 		.flag=CONFIG_MODE_FLAG,
 		.target=(int16_t*) &(press.config.flags)
@@ -60,7 +86,8 @@ MenuItem mode_menu = {
 
 MenuItem press_time1_menu = {
 		.type=MENU_NUM,
-		.name="1st Press Time",
+		.name="Press Time 1",
+		.titlename="Time 1",
 		.lower=PRESS_TIME_LOWER_LIM,
 		.upper=PRESS_TIME_UPPER_LIM,
 		.step=500,
@@ -70,7 +97,8 @@ MenuItem press_time1_menu = {
 
 MenuItem press_time2_menu = {
 		.type=MENU_NUM,
-		.name="2nd Press Time",
+		.name="Press Time 2",
+		.titlename="Time 2",
 		.lower=0,
 		.upper=PRESS_TIME_UPPER_LIM,
 		.step=500,
@@ -81,6 +109,7 @@ MenuItem press_time2_menu = {
 MenuItem burps_menu = {
 		.type=MENU_NUM,
 		.name="Taps",
+		.titlename=NULL,
 		.lower=BURPS_LOWER_LIM,
 		.upper=BURPS_UPPER_LIM,
 		.step=1,
@@ -91,6 +120,7 @@ MenuItem burps_menu = {
 MenuItem eco_mode_menu = {
 		.type=MENU_FLAG,
 		.name="Eco Mode",
+		.titlename=NULL,
 		.display=&generic_display,
 		.flag=CONFIG_ECO_FLAG,
 		.target=(int16_t*) &(press.config.flags)
@@ -99,6 +129,7 @@ MenuItem eco_mode_menu = {
 MenuItem buzzer_menu = {
 		.type=MENU_FLAG,
 		.name="Buzzer",
+		.titlename=NULL,
 		.display=&generic_display,
 		.flag=CONFIG_BUZZER_FLAG,
 		.target=(int16_t*) &(press.config.flags)
@@ -107,12 +138,14 @@ MenuItem buzzer_menu = {
 MenuItem service_menu = {
 		.type=MENU,
 		.name="Service",
+		.titlename=NULL,
 		.display=&generic_display
 };
 
 MenuItem reset_menu = {
 		.type=MENU_RESET,
 		.name="Reset All?",
+		.titlename=NULL,
 		.display=&reset_display,
 		.value = 0
 };
@@ -120,6 +153,7 @@ MenuItem reset_menu = {
 MenuItem units_menu = {
 		.type = MENU_TEMP_UNITS,
 		.name = "Temp Units",
+		.titlename=NULL,
 		.display=&units_display,
 		.target=(int16_t*) &(press.config.flags),
 		.flag = CONFIG_UNITS_FLAG
@@ -128,24 +162,28 @@ MenuItem units_menu = {
 MenuItem jog_menu = {
 		.type = MENU_JOG,
 		.name = "Jog",
+		.titlename=NULL,
 		.display = &jog_display
 };
 
 MenuItem lifetime_menu = {
 		.type = MENU_DEBUG,
 		.name = "Lifetime Cycles",
+		.titlename="Lifetime",
 		.display = &lifetime_display
 };
 
 MenuItem debug_menu = {
 		.type = MENU_DEBUG,
 		.name = "Diagnostics",
+		.titlename=NULL,
 		.display = &debug_display
 };
 
 MenuItem cycle_menu = {
 		.type = MENU_CYCLE,
 		.name = "Cycle",
+		.titlename=NULL,
 		.display = &reset_display
 };
 
@@ -161,22 +199,49 @@ extern bool cycle_mode;
 
 void init_menus(void) {
 	link_menus(&status_menu, &main_menu);
+//
+//	link_menus(&main_menu, &press_reset_count);
+//	link_menus(&main_menu, &top_temp_menu);
+//	link_menus(&main_menu, &bottom_temp_menu);
+//	link_menus(&main_menu, &mode_menu);
+//	link_menus(&main_menu, &press_time1_menu);
+//	link_menus(&main_menu, &press_time2_menu);
+//	link_menus(&main_menu, &burps_menu);
+//	link_menus(&main_menu, &eco_mode_menu);
+//	link_menus(&main_menu, &buzzer_menu);
+//	link_menus(&main_menu, &units_menu);
+//	link_menus(&main_menu, &service_menu);
+//
+//	link_menus(&service_menu, &jog_menu);
+//	link_menus(&service_menu, &lifetime_menu);
+//	link_menus(&service_menu, &debug_menu);
+//#ifdef CYCLE_MODE
+//	link_menus(&service_menu, &cycle_menu);
+//#endif
+//	link_menus(&service_menu, &reset_menu);
 
+	link_menus(&main_menu, &temperature_menu);
+	link_menus(&main_menu, &pressmode_menu);
 	link_menus(&main_menu, &press_reset_count);
-	link_menus(&main_menu, &top_temp_menu);
-	link_menus(&main_menu, &bottom_temp_menu);
-	link_menus(&main_menu, &mode_menu);
-	link_menus(&main_menu, &press_time1_menu);
-	link_menus(&main_menu, &press_time2_menu);
-	link_menus(&main_menu, &burps_menu);
-	link_menus(&main_menu, &eco_mode_menu);
-	link_menus(&main_menu, &buzzer_menu);
-	link_menus(&main_menu, &units_menu);
-	link_menus(&main_menu, &service_menu);
+	link_menus(&main_menu, &options_menu);
 
+	link_menus(&temperature_menu, &top_temp_menu);
+	link_menus(&temperature_menu, &bottom_temp_menu);
+
+
+	link_menus(&pressmode_menu, &mode_menu);
+	link_menus(&pressmode_menu, &press_time1_menu);
+	link_menus(&pressmode_menu, &press_time2_menu);
+	link_menus(&pressmode_menu, &burps_menu);
+
+	link_menus(&options_menu, &eco_mode_menu);
+	link_menus(&options_menu, &buzzer_menu);
+	link_menus(&options_menu, &units_menu);
+	link_menus(&options_menu, &service_menu);
+
+	link_menus(&service_menu, &debug_menu);
 	link_menus(&service_menu, &jog_menu);
 	link_menus(&service_menu, &lifetime_menu);
-	link_menus(&service_menu, &debug_menu);
 #ifdef CYCLE_MODE
 	link_menus(&service_menu, &cycle_menu);
 #endif
@@ -290,8 +355,8 @@ MenuItem* menu_enter(MenuItem* item) {
 		item = item->parent;
 		break;
 	case MENU: // item is another menu
-		if (item->index > 0) {
-			item = item->items[item->index - 1]; // enter child menu if possible
+		if (item->index < item->length) {
+			item = item->items[item->index]; // enter child menu if possible
 			item->index = 0;
 			if (item->target != NULL) {
 				item->value = *(item->target);   // copy current target into value
@@ -485,7 +550,8 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 
 	if (press.config.top_temp > 0.0f){
 		char str[32] = {0};
-		sprintf(str, "%3d: %3d %c", press.config.top_temp, getTopTempDisplay(&press), unit);
+		char is_on = press.thermal_state.top_ssr_on ? '*' : ' ';
+		sprintf(str, "%3d: %3d %c%c", press.config.top_temp, getTopTempDisplay(&press), unit, is_on);
 		set_row(str, 3, 1);
 	} else {
 		char str[32] = {0};
@@ -495,7 +561,8 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 
 	if (press.config.bottom_temp > 0){
 		char str[32] = {0};
-		sprintf(str, "%3d: %3d %c", press.config.bottom_temp, getBottomTempDisplay(&press), unit);
+		char is_on = press.thermal_state.bottom_ssr_on ? '*' : ' ';
+		sprintf(str, "%3d: %3d %c%c", press.config.bottom_temp, getBottomTempDisplay(&press), unit, is_on);
 		set_row(str, 5, 1);
 	} else {
 		char str[32] = {0};
@@ -512,7 +579,13 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 }
 
 HAL_StatusTypeDef generic_display(MenuItem* item) {
-	set_row(item->name, 0, 1);
+	if (item->titlename != NULL)
+	{
+		set_row(item->titlename, 0, 1);
+	} else
+	{
+		set_row(item->name, 0, 1);
+	}
 	switch(item->type) {
 	case MENU: // item is a menu
 	{
@@ -525,9 +598,9 @@ HAL_StatusTypeDef generic_display(MenuItem* item) {
 			{
 				invert_row[row_index] = 1;
 			}
-			if (menu_index <= item->length && menu_index > 0) {
-				sprintf(str, "%c%s", cursor, (item->items[menu_index-1])->name);
-			} else if (menu_index == 0) {
+			if (menu_index < item->length) {
+				sprintf(str, "%c%s", cursor, (item->items[menu_index])->name);
+			} else if (menu_index == item->length) {
 				sprintf(str, "%cBack", cursor);
 			}
 			set_row(str, row_index, 0);
@@ -561,7 +634,13 @@ HAL_StatusTypeDef generic_display(MenuItem* item) {
 }
 
 HAL_StatusTypeDef temperature_display(MenuItem* item) {
-	set_row(item->name, 0, 1);
+	if (item->titlename != NULL)
+	{
+		set_row(item->titlename, 0, 1);
+	} else
+	{
+		set_row(item->name, 0, 1);
+	}
 	if (item->value > 0) {
 		char str[32] = {0};
 		char unit;
@@ -579,15 +658,26 @@ HAL_StatusTypeDef temperature_display(MenuItem* item) {
 }
 
 HAL_StatusTypeDef press_time_display(MenuItem* item) {
-	set_row(item->name, 0, 1);
-	char str[32] = {0};
+	if (item->titlename != NULL)
+	{
+		set_row(item->titlename, 0, 1);
+	} else
+	{
+		set_row(item->name, 0, 1);
+	}	char str[32] = {0};
 	sprintf(str, "Time: %d.%d s", item->value / 1000, (item->value / 100) % 10);
 	set_row(str, 3, 0);
 	return write_row(0);
 }
 
 HAL_StatusTypeDef manual_mode_display(MenuItem* item) {
-	set_row(item->name, 0, 1);
+	if (item->titlename != NULL)
+	{
+		set_row(item->titlename, 0, 1);
+	} else
+	{
+		set_row(item->name, 0, 1);
+	}
 	if (item->value & item->flag) {
 		set_row("Mode: Auto", 3, 0);
 	} else {
@@ -598,7 +688,13 @@ HAL_StatusTypeDef manual_mode_display(MenuItem* item) {
 }
 
 HAL_StatusTypeDef reset_display(MenuItem* item) {
-	set_row(item->name, 0, 1);
+	if (item->titlename != NULL)
+	{
+		set_row(item->titlename, 0, 1);
+	} else
+	{
+		set_row(item->name, 0, 1);
+	}
 	if (item->value) {
 		set_row("Yes", 3, 0);
 		set_row("Are you sure?", 5, 0);
@@ -609,7 +705,13 @@ HAL_StatusTypeDef reset_display(MenuItem* item) {
 }
 
 HAL_StatusTypeDef units_display(MenuItem* item) {
-	set_row(item->name, 0, 1);
+	if (item->titlename != NULL)
+	{
+		set_row(item->titlename, 0, 1);
+	} else
+	{
+		set_row(item->name, 0, 1);
+	}
 	if (item->value & item->flag) {
 		set_row("Units: Celsius", 3, 0);
 	} else {
@@ -619,7 +721,13 @@ HAL_StatusTypeDef units_display(MenuItem* item) {
 }
 
 HAL_StatusTypeDef jog_display(MenuItem* item) {
-	set_row(item->name, 0, 1);
+	if (item->titlename != NULL)
+	{
+		set_row(item->titlename, 0, 1);
+	} else
+	{
+		set_row(item->name, 0, 1);
+	}
 	set_row("Jog press using", 3, 0);
 	set_row("menu buttons", 4, 0);
 	return write_row(0);
@@ -659,7 +767,7 @@ HAL_StatusTypeDef write_row_innerfunc(void) {
 	}
 }
 
-void set_row(char* str, uint8_t rownum, uint8_t font) {
+void set_row(const char* str, uint8_t rownum, uint8_t font) {
 	char* row = screen_buf+(rownum << 5);
 	strncpy(row, str, 32);
 	screen_fonts[rownum] = font;
