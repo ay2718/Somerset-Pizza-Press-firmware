@@ -77,8 +77,8 @@ MenuItem press_reset_count = {
 
 MenuItem mode_menu = {
 		.type=MENU_FLAG, // not implemented
-		.name="Auto Mode",
-		.titlename=NULL,
+		.name="Auto/Manual Mode",
+		.titlename="Mode Set",
 		.display=&manual_mode_display,
 		.flag=CONFIG_MODE_FLAG,
 		.target=(int16_t*) &(press.config.flags)
@@ -86,8 +86,8 @@ MenuItem mode_menu = {
 
 MenuItem press_time1_menu = {
 		.type=MENU_NUM,
-		.name="Press Time 1",
-		.titlename="Time 1",
+		.name="1st Press Time",
+		.titlename="1st Press",
 		.lower=PRESS_TIME_LOWER_LIM,
 		.upper=PRESS_TIME_UPPER_LIM,
 		.step=500,
@@ -97,8 +97,8 @@ MenuItem press_time1_menu = {
 
 MenuItem press_time2_menu = {
 		.type=MENU_NUM,
-		.name="Press Time 2",
-		.titlename="Time 2",
+		.name="2nd Press Time",
+		.titlename="2nd Press",
 		.lower=0,
 		.upper=PRESS_TIME_UPPER_LIM,
 		.step=500,
@@ -350,6 +350,7 @@ MenuItem* menu_enter(MenuItem* item) {
 	switch(item->type) {
 	case MENU_STATUS:
 		item = item->items[0];
+		item->index = 0;
 		break;
 	case MENU_DEBUG:
 		item = item->parent;
@@ -572,7 +573,14 @@ HAL_StatusTypeDef status_display(MenuItem* item) {
 
 	{
 		char str[32] = {0};
-		sprintf(str, "Count: %d", (int) press_count);
+		if (press.config.flags & CONFIG_MODE_FLAG)
+		{
+			sprintf(str, "Count: %-5dAuto", (int) press_count);
+		}
+		else
+		{
+			sprintf(str, "Count: %-5dManual", (int) press_count);
+		}
 		set_row(str, 7, 0);
 	}
 	return write_row(0);
@@ -696,10 +704,13 @@ HAL_StatusTypeDef reset_display(MenuItem* item) {
 		set_row(item->name, 0, 1);
 	}
 	if (item->value) {
-		set_row("Yes", 3, 0);
-		set_row("Are you sure?", 5, 0);
+		set_row(">Reset", 3, 0);
+		set_row(" Back", 4, 0);
+		invert_row[3] = 1;
 	} else {
-		set_row("No", 3, 0);
+		set_row(" Reset", 3, 0);
+		set_row(">Back", 4, 0);
+		invert_row[4] = 1;
 	}
 	return write_row(0);
 }
