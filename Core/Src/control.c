@@ -241,7 +241,9 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 
 		// if the bottom sensor is not triggered
 		if (bottom_lim) {
-			press->press_state.error_code |= ERR_OVERSHOOT;
+			//press->press_state.error_code |= ERR_OVERSHOOT;
+			press->press_state.current_limit = MOTOR_CURRENT_LOW;
+			press->press_state.motor_setpoint = 0.0f;
 		}
 
 		// Manual mode and press buttons released
