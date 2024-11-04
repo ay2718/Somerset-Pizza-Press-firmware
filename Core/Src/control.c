@@ -168,6 +168,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		max_current = 0.0f;
 		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_setpoint = 0.0f;
+		press->press_state.dwell_timer = 0;
 		config_to_setpoints(press);
 		if (top_lim) {
 			// if somehow we're not at the top at the ready state
@@ -233,16 +234,24 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 			press->press_state.motor_setpoint = 0.0f;
 			press->press_state.mode = PRESS_ERROR;
 		}
+
+		press->press_state.dwell_timer = 0;
 		break;
 
 	case PRESS_DWELL:
 		press->press_state.current_limit = MOTOR_CURRENT_LOW;
-		press->press_state.motor_setpoint = 0.0f;
+		//press->press_state.motor_setpoint = 0.0f;
+		press->press_state.dwell_timer++;
 
 		// if the bottom sensor is not triggered
 		if (bottom_lim) {
 			//press->press_state.error_code |= ERR_OVERSHOOT;
-			press->press_state.current_limit = MOTOR_CURRENT_LOW;
+			if ((press->press_state.dwell_timer > 250) && (fabsf(shunt_current) < 4.5f)) {
+				press->press_state.motor_setpoint = 0.15f;
+			} else {
+				press->press_state.motor_setpoint = 0.0f;
+			}
+		} else {
 			press->press_state.motor_setpoint = 0.0f;
 		}
 
