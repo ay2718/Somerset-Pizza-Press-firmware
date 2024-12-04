@@ -1,3 +1,13 @@
+/**
+ * @file font_8x8.h
+ * @author Austin Brown
+ * @brief 760 Pizza Press 8x8 px small display font
+ * @date 2022-08-05
+ *
+ * @copyright Copyright 2024 Boston Precision Motion LLC.
+ * This project is released under the MIT License
+ */
+
 #ifndef _FONT_8x8_H_
 #define _FONT_8x8_H_
 

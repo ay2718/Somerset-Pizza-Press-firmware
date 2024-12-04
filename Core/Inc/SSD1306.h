@@ -1,3 +1,13 @@
+/**
+ * @file SSD1306.h
+ * @author Austin Brown
+ * @brief 760 Pizza Press SSD1306 display driver
+ * @date 2022-08-05
+ *
+ * @copyright Copyright 2024 Boston Precision Motion LLC.
+ * This project is released under the MIT License
+ */
+
 #ifndef SSD1306_SIMPLE_H
 #define SSD1306_SIMPLE_H
 

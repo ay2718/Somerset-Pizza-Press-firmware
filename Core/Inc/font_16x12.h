@@ -1,3 +1,13 @@
+/**
+ * @file font_16x12.h
+ * @author Austin Brown
+ * @brief 760 Pizza Press 16x12 px large display font
+ * @date 2022-08-05
+ *
+ * @copyright Copyright 2024 Boston Precision Motion LLC.
+ * This project is released under the MIT License
+ */
+
 #ifndef _FONT_16x12_H_
 #define _FONT_16x12_H_
 

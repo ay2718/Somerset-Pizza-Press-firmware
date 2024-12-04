@@ -3,3 +3,6 @@
 *.su
 Debug/
 Release/
+.vscode/
+html/
+latex/

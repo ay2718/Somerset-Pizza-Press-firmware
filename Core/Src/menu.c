@@ -1,8 +1,11 @@
-/*
- * menu.c
+/**
+ * @file menu.c
+ * @author Aaron Yeiser
+ * @brief 760 Pizza Press screen menus
+ * @date 2022-08-05
  *
- *  Created on: Aug 5, 2022
- *      Author: ayeiser
+ * @copyright Copyright 2024 Boston Precision Motion LLC.
+ * This project is released under the MIT License
  */
 
 
@@ -199,26 +202,6 @@ extern bool cycle_mode;
 
 void init_menus(void) {
 	link_menus(&status_menu, &main_menu);
-//
-//	link_menus(&main_menu, &press_reset_count);
-//	link_menus(&main_menu, &top_temp_menu);
-//	link_menus(&main_menu, &bottom_temp_menu);
-//	link_menus(&main_menu, &mode_menu);
-//	link_menus(&main_menu, &press_time1_menu);
-//	link_menus(&main_menu, &press_time2_menu);
-//	link_menus(&main_menu, &burps_menu);
-//	link_menus(&main_menu, &eco_mode_menu);
-//	link_menus(&main_menu, &buzzer_menu);
-//	link_menus(&main_menu, &units_menu);
-//	link_menus(&main_menu, &service_menu);
-//
-//	link_menus(&service_menu, &jog_menu);
-//	link_menus(&service_menu, &lifetime_menu);
-//	link_menus(&service_menu, &debug_menu);
-//#ifdef CYCLE_MODE
-//	link_menus(&service_menu, &cycle_menu);
-//#endif
-//	link_menus(&service_menu, &reset_menu);
 
 	link_menus(&main_menu, &temperature_menu);
 	link_menus(&main_menu, &pressmode_menu);

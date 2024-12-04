@@ -1,8 +1,11 @@
-/*
- * debouncea.c
+/**
+ * @file debounce.c
+ * @author Aaron Yeiser
+ * @brief 760 Pizza Press debounced buttons
+ * @date 2022-08-05
  *
- *  Created on: Aug 5, 2022
- *      Author: ayeiser
+ * @copyright Copyright 2024 Boston Precision Motion LLC.
+ * This project is released under the MIT License
  */
 
 #include "debounce.h"
@@ -20,8 +23,13 @@ Button tray_interlock;
 
 bool debounce(Button* button, bool state) {
 	if (button->state == state) {
+		// If no state change has occurred since last rising or falling edge detected...
 		button->ctr = 0;
+
+		// Handle repeat counter
 		if (++button->repeat_ctr > REPEAT_TIME) {
+
+			// Generate rising or falling edge if button is held down
 			button->repeat_ctr = REPEAT_TIME - REPEAT_INTERVAL;
 			if (button->state) {
 				button->rising_edge_flag = true;
@@ -30,6 +38,8 @@ bool debounce(Button* button, bool state) {
 			}
 		}
 	} else {
+		// If state change has occurred, we need at least SETTLING_TIME consecutive button reads
+		// with the newt state before we detect a rising or falling edge
 		button->repeat_ctr = 0;
 		if (++button->ctr > SETTLING_TIME) {
 			button->state = state;

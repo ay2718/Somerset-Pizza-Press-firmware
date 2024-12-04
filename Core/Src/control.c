@@ -1,3 +1,13 @@
+/**
+ * @file control.c
+ * @author Aaron Yeiser
+ * @brief 760 Pizza Press mechanical and thermo controls
+ * @date 2022-08-05
+ *
+ * @copyright Copyright 2024 Boston Precision Motion LLC.
+ * This project is released under the MIT License
+ */
+
 #include "control.h"
 
 // external variables
@@ -19,11 +29,16 @@ volatile uint16_t buzzer_ctr = 0;
 volatile uint16_t white_led_ctr = 0;
 volatile uint16_t blue_led_ctr = 0;
 
+/// Signal the ADC is ready when new data has occurred
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
 	adc_ready = true;
 }
 
-void lights_and_buzzers(Press *press) {
+/**
+ * @brief Write to LED lights and buzzer.  Called once per tick
+ * @param press Press state
+ */
+static void lights_and_buzzers(Press *press) {
 	if (buzzer_ctr > 0) {
 		buzzer_ctr--;
 		HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
@@ -51,6 +66,7 @@ void lights_and_buzzers(Press *press) {
 	}
 }
 
+/// This gets called every millisecond
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if(htim->Instance == TIM1) {
 		// Process interlock state
@@ -74,17 +90,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 
 	}
 }
-
-// Use only if SPI is in interrupt or DMA mode
-//void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
-//	if (hspi->Instance == SPI1) {
-//		// write all thermocouple CS pins high
-//		__WRITE_THERMO_TOP1_CS(1);
-//		__WRITE_THERMO_TOP2_CS(1);
-//		__WRITE_THERMO_BOTTOM1_CS(1);
-//		__WRITE_THERMO_BOTTOM2_CS(1);
-//	}
-//}
 
 uint32_t check_interlocks(Press* press) {
 	int err = PRESS_OK;
@@ -113,6 +118,8 @@ uint32_t check_interlocks(Press* press) {
 }
 
 void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
+
+	// If press mechanical side is disabled, set press to safe values and return
 	if (!press->press_setpoint.enable) {
 		press->press_state.motor_setpoint = 0.0f;
 		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
@@ -121,6 +128,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		return;
 	}
 
+	// Retrieve button states
 	bool top_lim = press_top_limit.state;
 	bool bottom_lim = press_bottom_limit.state;
 	bool tray_open = tray_interlock.state;
@@ -129,6 +137,9 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 	bool right_button = activate_right_button.state;
 
 	bool press_active = (!left_button) && (!right_button) && (!tray_open);
+
+	// Cycle mode for testing, this allows the press to run indefinitely
+	// Not recommended for production
 #ifdef CYCLE_MODE
 	if (cycle_mode) {
 		press_active |= (cycle_state && (!tray_open));
@@ -153,29 +164,36 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 	// Throw an error state if the interlock is tripped
 	check_interlocks(press);
 
+	// Measure motor current and throw ERR_OVERCURRENT flag if overcurrent tripped
 	shunt_current = get_shunt_current(&hadc);
 	shunt_current_sqr_filt = (1.0f - CURRENT_FILT) * shunt_current_sqr_filt + CURRENT_FILT * shunt_current*shunt_current;
 	if (shunt_current_sqr_filt > MAX_CURRENT_SQR) {
 		press->press_state.mode = PRESS_ERROR;
 		press->press_state.error_code |= ERR_OVERCURRENT;
 	}
+
+	// max_current is used to track maximum current draw per cycle for debugging
 	max_current = max(max_current, shunt_current);
 	max_current = max(max_current, -shunt_current);
 
 	switch (press->press_state.mode) {
 
 	case PRESS_READY:
+
+		// Reset all relevant parameters
 		max_current = 0.0f;
 		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_setpoint = 0.0f;
 		config_to_setpoints(press);
+
+		// if somehow we're not at the top at the ready state
 		if (top_lim) {
-			// if somehow we're not at the top at the ready state
 			press->press_state.error_code |= ERR_OVERSHOOT;
 		}
+
+		// both buttons pressed and tray closed
+		// setup everything, start press movement
 		if (press_active) {
-			// both buttons pressed and tray closed
-			// setup everything
 			press->press_state.ticks_until_next = PRESS_TIME_FASTDROP;
 			press->press_state.burp_ctr = press->press_setpoint.burps;
 			press->press_state.cycle = PRESS_FASTDROP;
@@ -184,8 +202,11 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		break;
 
 	case PRESS_ERROR:
+
+		// Low speed and low current
 		press->press_state.current_limit = MOTOR_CURRENT_LOW;
 		press->press_state.motor_setpoint = -DUTY_CYCLE_JOG;
+
 		// top limit switch triggered
 		if (!top_lim) {
 			press->press_state.mode = PRESS_DONE;
@@ -194,6 +215,10 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		break;
 
 	case PRESS_DOWN:
+
+		// High current setting, high speed if FASTDROP is set
+		// FASTDROP is only set after READY to rapidly move the press down
+		// It must be unset after a set time to prevent crashing the press
 		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		if (press->press_state.cycle == PRESS_FASTDROP) {
 			press->press_state.motor_setpoint = DUTY_CYCLE_FAST;
@@ -201,18 +226,19 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 			press->press_state.motor_setpoint = DUTY_CYCLE_SLOW;
 		}
 
+		// Timer event handling
 		if (press->press_state.ticks_until_next-- <= 0) {
 			if (press->press_state.cycle == PRESS_FASTDROP) {
-				// exit fast drop mode
+				// If we're in fastdrop mode, exit fastdrop and enter burp mode
 				press->press_state.cycle = PRESS_PERIOD1;
 				press->press_state.ticks_until_next = press->press_setpoint.press_ticks1;
 			} else if (press->press_setpoint.auto_mode){
-				// go to dwell mode
+				// If not fastdropping and in auto mode, go to dwell mode
 				press->press_state.mode = PRESS_DWELL;
 			}
 		}
 
-		// Press has bottomed out
+		// Press has bottomed out, go to dwell mode
 		if (!bottom_lim) {
 			press->press_state.mode = PRESS_DWELL;
 			if (press->press_state.cycle == PRESS_FASTDROP) {
@@ -221,12 +247,13 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 			}
 		}
 
-		// manual mode and buttons released
+		// Bring press up if in manual mode and buttons released
 		if (!press->press_setpoint.auto_mode && !press_active) {
 			press->press_state.mode = PRESS_UP;
 		}
 
 		// auto mode and not down, buttons released
+		// Operator must hold the buttons for at least a second or so in auto mode
 		if (press->press_setpoint.auto_mode
 				&& (press->press_state.cycle == PRESS_FASTDROP)
 				&& !press_active) {
@@ -236,40 +263,47 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		break;
 
 	case PRESS_DWELL:
+
+		// Set low current limit and command zero motion
 		press->press_state.current_limit = MOTOR_CURRENT_LOW;
 		press->press_state.motor_setpoint = 0.0f;
 
-		// if the bottom sensor is not triggered
+		// if the bottom sensor is not triggered something bad has happened
 		if (bottom_lim) {
 			press->press_state.error_code |= ERR_OVERSHOOT;
 		}
 
-		// Manual mode and press buttons released
+		// Manual mode and press buttons released--press goes up
 		if (!press->press_setpoint.auto_mode && !press_active) {
 			press->press_state.mode = PRESS_UP;
 		}
 
-		// Auto mode and ticks expired
+		// Event occurs--in auto mode this means dough tapping timeout is reached
 		if (press->press_setpoint.auto_mode &&
 				(press->press_state.ticks_until_next-- <= 0))
 		{
 			switch (press->press_state.cycle) {
 
+			// If cycle mode is dropping the press, set it to PRESS_TAPS
 			case PRESS_FASTDROP:
 			case PRESS_PERIOD1:
 				press->press_state.cycle = PRESS_TAPS;
 				break;
 
+			// Execute once per tap cycle: generate event to trigger moving the press up
 			case PRESS_TAPS:
 				if (press->press_state.burp_ctr > 0) {
+					// if taps remaining, move press up for PRESS_TIME_TAP_UP ticks
 					press->press_state.mode = PRESS_UP;
 					press->press_state.ticks_until_next = PRESS_TIME_TAP_UP;
 				} else {
+					// otherwise hold down for press_ticks2 ticks
 					press->press_state.cycle = PRESS_PERIOD2;
 					press->press_state.ticks_until_next = press->press_setpoint.press_ticks2;
 				}
 				break;
 
+			// Move the press up
 			case PRESS_PERIOD2:
 			default:
 				press->press_state.mode = PRESS_UP;
@@ -279,7 +313,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		break;
 
 	case PRESS_UP:
-		// Default speed setting
+		// Use low current. Move press slowly if tapping dough, fast otherwise
 		if (press->press_setpoint.auto_mode && (press->press_state.burp_ctr > 0)) {
 			press->press_state.current_limit = MOTOR_CURRENT_LOW;
 			press->press_state.motor_setpoint = -DUTY_CYCLE_SLOW;
@@ -288,7 +322,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 			press->press_state.motor_setpoint = -DUTY_CYCLE_FAST;
 		}
 
-		// Tap timer expired
+		// Tap timer expired: decrement tap counter and bring the press down again
 		if (press->press_setpoint.auto_mode
 				&& (press->press_state.burp_ctr > 0)
 				&& (press->press_state.ticks_until_next-- <= 0)){
@@ -297,14 +331,14 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 			press->press_state.ticks_until_next = PRESS_TIME_TAP_DOWN;
 		}
 
-		// Manual mode and buttons pressed
+		// Manual mode and buttons pressed--bring the press down
 		if (!press->press_setpoint.auto_mode && press_active) {
 			press->press_state.cycle = PRESS_PERIOD1;
 			press->press_state.mode = PRESS_DOWN;
 			press->press_state.ticks_until_next = press->press_setpoint.press_ticks1;
 		}
 
-		// top limit reached!
+		// top limit reached, press id done!
 		if (!top_lim) {
 			press->press_state.mode = PRESS_DONE;
 			press_count++;
@@ -317,6 +351,7 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		break;
 
 	case PRESS_DONE:
+		// High current limit and no motion
 		press->press_state.current_limit = MOTOR_CURRENT_HIGH;
 		press->press_state.motor_setpoint = 0.0f;
 
@@ -328,24 +363,29 @@ void motor_state_machine(TIM_HandleTypeDef *htim, Press* press) {
 		break;
 
 	case PRESS_JOG:
+		// Low current mode and default of no motion
 		press->press_state.current_limit = MOTOR_CURRENT_LOW;
 		press->press_state.motor_setpoint = 0.0f;
 
+		// Move press up if top limit switch not tripped and up button pressed
 		if (top_lim && menu_up_button.state && !menu_down_button.state) {
 			press->press_state.motor_setpoint = -DUTY_CYCLE_JOG;
 		}
 
+		// Move press down if bottom limit switch not tripped and down button pressed
 		if (bottom_lim && menu_down_button.state && !menu_up_button.state) {
 			press->press_state.motor_setpoint = DUTY_CYCLE_JOG;
 		}
 		break;
 
 	default:
+		// Should never occur
 		press->press_state.current_limit = MOTOR_CURRENT_LOW;
 		press->press_state.motor_setpoint = 0.0f;
 		press->press_state.error_code |= ERR_OVERSHOOT;
 	}
 
+	// Set motor duty cycle (with slew rate limit)
 	motor_pwm_update(&htim1, press, shunt_current);
 }
 
@@ -372,6 +412,7 @@ void motor_pwm_update(TIM_HandleTypeDef *htim, Press* press, float current) {
 	// Forward:  Channel 1 ground, channel 2 PWM
 	// Current is inverted!!!!
 
+	// Ensure press setpoint is between -0.99 and 0.99
 	press->press_state.motor_setpoint =
 			clip(press->press_state.motor_setpoint,
 					DUTY_CYCLE_FAST,
@@ -382,16 +423,21 @@ void motor_pwm_update(TIM_HandleTypeDef *htim, Press* press, float current) {
 	int8_t dir;
 
 	if (press->press_state.motor_setpoint > 0.0f) {
+		// if press is moving down, we want positive current
 		itarget = press->press_state.current_limit - deadband;
 		dir = 1;
 	} else if (press->press_state.motor_setpoint < 0.0f) {
+		// if press is moving up we want negative current
 		itarget = -press->press_state.current_limit + deadband;
 		dir = -1;
 	} else {
+		// zero current if press is not moving
 		itarget = 0.0f;
 		dir = 0;
 	}
 
+	// try to speed up press if current is too low
+	// try to slow down press if current is too high
 	if (-current > itarget + deadband) {
 		step = -MAX_SLEW_RATE;
 	} else if (-current < itarget - deadband) {
@@ -400,6 +446,7 @@ void motor_pwm_update(TIM_HandleTypeDef *htim, Press* press, float current) {
 		step = 0.0f;
 	}
 
+	// Prevent duty cycle from exceeding motor_slew_limited_setpoint
 	float step_max = clip(press->press_state.motor_setpoint - press->press_state.motor_slew_limited_setpoint,
 			MAX_SLEW_RATE,
 			-MAX_SLEW_RATE);
@@ -412,24 +459,13 @@ void motor_pwm_update(TIM_HandleTypeDef *htim, Press* press, float current) {
 		step = step_max;
 	}
 
-//	// forward current is too high
-//	if (-current > press->press_state.current_limit) {
-//		step = -MAX_SLEW_RATE;
-//	// reverse current too high
-//	} else if (current > press->press_state.current_limit) {
-//		step = MAX_SLEW_RATE;
-//	} else {
-//		step = clip(press->press_state.motor_setpoint - press->press_state.motor_slew_limited_setpoint,
-//			MAX_SLEW_RATE,
-//			-MAX_SLEW_RATE);
-//	}
-
 	press->press_state.motor_slew_limited_setpoint =
 			clip(press->press_state.motor_slew_limited_setpoint + step,
 					DUTY_CYCLE_FAST,
 					-DUTY_CYCLE_FAST);
 
 
+	// Set PWM duty cycle from slew limited setpoint
 	int16_t pwm_cmd = (int16_t) (press->press_state.motor_slew_limited_setpoint * duty_to_cmd);
 	if (pwm_cmd > 0) {
 		__HAL_TIM_SET_COMPARE(htim, TIM_CHANNEL_1, PWM_PERIOD);
@@ -466,7 +502,7 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 		__WRITE_THERMO_BOTTOM1_CS(1);
 		__WRITE_THERMO_BOTTOM2_CS(1);
 
-		// Detect if any fault bits are set
+		// Detect if any fault bits are set (see thermocouple reader datasheet)
 		bool fault_state = (thermo_buf[1] & 0b1u) || (thermo_buf[3] & 0b111u);
 //		bool fault_state = thermo_buf[3] & 0b101u;
 		if (fault_state) {
@@ -499,6 +535,9 @@ HAL_StatusTypeDef read_thermocouples(SPI_HandleTypeDef *hspi, Press* press) {
 }
 
 void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
+
+	// Read top platen thermocouple and backup thermocouple.
+	// Fallback to backup if main thermocouple is bad, throw error if both are bad
 	if (!(press->thermal_state.error_code & ERR_BAD_TOP_THERMO1)) {
 		press->thermal_state.top_temp = press->thermal_state.top1;
 		press->thermal_state.error &= ~1;
@@ -514,6 +553,7 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 //		return;
 	}
 
+	// Read bottom platten thermoucouple and backup thermocouple
 	if (!(press->thermal_state.error_code & ERR_BAD_BOTTOM_THERMO1)) {
 		press->thermal_state.bottom_temp = press->thermal_state.bottom1;
 		press->thermal_state.error &= ~2;
@@ -529,6 +569,7 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 //		return;
 	}
 
+	// If press heaters are disabled, turn off elements and return
 	if (!press->thermal_setpoint.enable) {
 		__WRITE_TOP_PLATTER_HEAT(0);
 		__WRITE_BOTTOM_PLATTER_HEAT(0);
@@ -537,6 +578,7 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 		return;
 	}
 
+	// If temperature are more than 3 degrees low, signal that press is not ready
 	if (press->thermal_setpoint.top_temp - press->thermal_state.top_temp > 3.0f) {
 		press->thermal_state.top_ready = false;
 	}
@@ -544,12 +586,14 @@ void thermal_control_loop(SPI_HandleTypeDef* hspi, Press* press) {
 		press->thermal_state.bottom_ready = false;
 	}
 
+	// Set heating elements on/off if under/over setpoint temperature
 	press->thermal_state.top_ssr_on = (press->thermal_state.top_temp < press->thermal_state.top_threshold);
 	press->thermal_state.bottom_ssr_on = (press->thermal_state.bottom_temp < press->thermal_state.bottom_threshold);
 
 	__WRITE_TOP_PLATTER_HEAT(press->thermal_state.top_ssr_on);
 	__WRITE_BOTTOM_PLATTER_HEAT(press->thermal_state.bottom_ssr_on);
 
+	// Bang-bang deadband control to set top_threshold and bottom_threshold
 	if (press->thermal_state.top_ssr_on) {
 		press->thermal_state.top_threshold =
 				press->thermal_setpoint.top_temp + THERM_DEADBAND;

@@ -1,8 +1,19 @@
+/**
+ * @file structs.h
+ * @author Aaron Yeiser
+ * @brief 760 Pizza Press structures
+ * @date 2022-08-10
+ *
+ * @copyright Copyright 2024 Boston Precision Motion LLC.
+ * This project is released under the MIT License
+ */
+
 #ifndef STRUCTS_H_
 #define STRUCTS_H_
 
 #include "main.h"
 
+/// State machine states for pressing dough
 typedef enum {
 	PRESS_READY,
 	PRESS_ERROR,
@@ -13,6 +24,7 @@ typedef enum {
 	PRESS_JOG
 } PressMode;
 
+/// State machine states for tapping the dough
 typedef enum {
 	PRESS_FASTDROP,
 	PRESS_PERIOD1,
@@ -20,6 +32,7 @@ typedef enum {
 	PRESS_PERIOD2
 } PressCycleMode;
 
+/// Enum of menu types
 typedef enum {
 	MENU,
 	MENU_NUM,
@@ -35,6 +48,7 @@ typedef enum {
 	MENU_OTHER,
 } MenuType;
 
+/// Debounced button state
 typedef struct {
 	int ctr;
 	int repeat_ctr;
@@ -43,6 +57,7 @@ typedef struct {
 	bool falling_edge_flag;
 } Button;
 
+/// Mechanical press setpoint data
 typedef struct {
 	int16_t burps;
 	int16_t press_ticks1;
@@ -51,6 +66,7 @@ typedef struct {
 	bool enable;
 } PressSetpoint;
 
+/// Mechanical press state data
 typedef struct {
 	PressMode mode;
 	PressCycleMode cycle;
@@ -63,12 +79,14 @@ typedef struct {
 	uint32_t error_code;
 } PressState;
 
+/// Thermal press setpoint data
 typedef struct {
 	float top_temp;
 	float bottom_temp;
 	bool enable;
 } ThermalSetpoint;
 
+/// Thermal press state data
 typedef struct {
 	union {
 		float temp_buf[4];
@@ -89,7 +107,8 @@ typedef struct {
 	bool bottom_ssr_on;
 } ThermalState;
 
-// this allows us to map config settings to registers
+/// Press configuration data stored in RTC registers
+/// Functions in config.h
 typedef	union {
 	uint32_t regs[5];
 	struct {
@@ -103,6 +122,7 @@ typedef	union {
 	};
 } Config;
 
+/// Container for all press mechanical and thermal setpoint/state
 typedef struct {
 	PressSetpoint press_setpoint;
 	PressState press_state;
@@ -111,8 +131,7 @@ typedef struct {
 	Config config;
 } Press;
 
-// TI is the integral time
-// If implemented, TD is the derivative time (1/KD)
+/// PI controller parameters and state
 typedef struct {
 	float KP;
 	float TI;
@@ -120,36 +139,34 @@ typedef struct {
 	float max_accum;
 } MotorPI;
 
+/// Menu item structure--contains all data needed to display a menu item
 typedef struct __MenuItem{
-	// 0: menu
-	// 1: numerical entry
-	// 2: yes/no entry
+	/// 0: menu
+	/// 1: numerical entry
+	/// 2: yes/no entry
 	MenuType type;
 
-	uint16_t length;  	// menu length
-	int16_t upper;		// numerical upper bound
+	uint16_t length;  	///< menu length
+	int16_t upper;		///< numerical upper bound for value
 
-	uint16_t index;		// menu index
-	int16_t lower;		// numerical lower bound
+	uint16_t index;		///< menu index
+	int16_t lower;		///< numerical lower bound for value
 
-	int16_t step;	// numerical entry step
-	int16_t flag;	// yes/no entry flag mask
+	int16_t step;	///< numerical entry step
+	int16_t flag;	///< yes/no entry flag mask
 
-	// if applicable, target modified by menu action
-	int16_t value;
-	int16_t* target;
 
-	// item name
-	const char* name;
-	const char* titlename;
+	int16_t value; ///< if applicable, target value modified by menu action
+	int16_t* target; ///< pointer to target value to edit
 
-	// NULL if top level
-	struct __MenuItem* parent;
+	const char* name; ///< menu item name
+	const char* titlename; ///< menu item title (usually shorter)
 
-	// entries are NULL if not defined
-	struct __MenuItem* items[16];
+	struct __MenuItem* parent; ///< Null ptr if top level menu
 
-	HAL_StatusTypeDef (*display)(struct __MenuItem*);
+	struct __MenuItem* items[16]; ///< Child menu entries are NULL if not defined
+
+	HAL_StatusTypeDef (*display)(struct __MenuItem*); ///< Write to the display
 } MenuItem;
 
 #endif

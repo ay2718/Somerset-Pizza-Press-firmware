@@ -1,8 +1,11 @@
-/*
- * backup_rtc.h
+/**
+ * @file config.h
+ * @author Aaron Yeiser
+ * @brief 760 Pizza Press configuration constants, backup, and restore
+ * @date 2022-08-10
  *
- *  Created on: Aug 10, 2022
- *      Author: ayeiser
+ * @copyright Copyright 2024 Boston Precision Motion LLC.
+ * This project is released under the MIT License
  */
 
 #ifndef INC_CONFIG_H_
@@ -36,12 +39,22 @@
 #define TEMP_LOWER_LIM_C 50
 #define TEMP_UPPER_LIM_C 163
 
+// fudge factor for thermocouple measurement
 #define THERMO_SCALING_FACTOR 0.983f
 //#define THERMO_SCALING_FACTOR 1.0f
 
+/// Write config settings to RTC backup registers
 void backup_settings(Config*);
+
+/// Read settings from RTC backup registers
+/// If RTC settings are invalid, we restore to default
 void restore_settings(Config*);
+
+/// Reset configuration to default.
+/// restore_settings() must be called to write to RTC registers
 void reset_defaults(Config*);
+
+/// Process config flags and set press temperature setpoints
 void config_to_setpoints(Press*);
 
 

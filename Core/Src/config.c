@@ -1,8 +1,11 @@
-/*
- * config.c
+/**
+ * @file config.c
+ * @author Aaron Yeiser
+ * @brief 760 Pizza Press configuration constants, backup, and restore
+ * @date 2022-08-10
  *
- *  Created on: Aug 10, 2022
- *      Author: ayeiser
+ * @copyright Copyright 2024 Boston Precision Motion LLC.
+ * This project is released under the MIT License
  */
 
 #include "config.h"
