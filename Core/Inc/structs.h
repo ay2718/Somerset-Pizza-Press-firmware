@@ -77,6 +77,7 @@ typedef struct {
 	float motor_slew_limited_setpoint;
 	float current_limit;
 	uint32_t error_code;
+	uint32_t dwell_timer;
 } PressState;
 
 /// Thermal press setpoint data

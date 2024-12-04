@@ -34,10 +34,10 @@
 #define PRESS_TIME_UPPER_LIM 10000
 
 #define TEMP_LOWER_LIM_F 120
-#define TEMP_UPPER_LIM_F 325 // 400
+#define TEMP_UPPER_LIM_F 400
 
 #define TEMP_LOWER_LIM_C 50
-#define TEMP_UPPER_LIM_C 163
+#define TEMP_UPPER_LIM_C 205
 
 // fudge factor for thermocouple measurement
 #define THERMO_SCALING_FACTOR 0.983f
